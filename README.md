@@ -9,5 +9,6 @@ mkdir /opt/jdk
 tar -zxf jdk-7u79-linux-x64.tar.gz -C /opt/jdk
 update-alternatives --install /usr/bin/java java /opt/jdk/jdk1.7.0_79/bin/java 100
 update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk1.7.0_79/bin/javac 100
-// Verify with java/javac -version
+update-alternatives --install /usr/bin/javap javap /opt/jdk/jdk1.7.0_79/bin/javap 100
+// Verify with java/javac/javap -version
 ```
