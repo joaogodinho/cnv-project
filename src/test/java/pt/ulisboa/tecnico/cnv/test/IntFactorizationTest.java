@@ -10,6 +10,6 @@ public class IntFactorizationTest {
     @Test
     public void simpleCall() {
         IntFactorization obj = new IntFactorization();
-        System.out.println(obj.calcPrimeFactors(new BigInteger("74513")));
+        System.out.println(obj.calcPrimeFactors(new BigInteger("1024")));
     }
 }
