@@ -18,7 +18,7 @@ import pt.ulisboa.tecnico.cnv.factorization.IntFactorization;
 public class HandleFactorize implements HttpHandler {
     final static Logger logger = Logger.getLogger(HandleFactorize.class);
 
-    final static String FORM = "<html><body><form method='post'>Number: <input type='text' name='number'></input><br><input type='submit'></input></form></body></html>";
+    final static String FORM = "<html><body><form method='get'>Number: <input type='text' name='n'></input><br><input type='submit'></input></form></body></html>";
 
     public HandleFactorize() {
         super();
@@ -28,34 +28,31 @@ public class HandleFactorize implements HttpHandler {
     public void handle(HttpExchange t) throws IOException {
         if (t.getRequestMethod().equals("GET")) {
             logger.info("GET request from " + t.getRequestURI());
-            t.sendResponseHeaders(200, FORM.length());
-            OutputStream os = t.getResponseBody();
-            os.write(FORM.getBytes());
-            os.close();
-        } else if (t.getRequestMethod().equals("POST")) {
-            logger.info("POST request from " + t.getRequestURI());
+            String query = t.getRequestURI().getQuery();
+            logger.info("Params are: " + query);
 
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(t.getRequestBody()));
-            String inputNumber = bufferedReader.readLine().split("=")[1];
-            logger.info("Requested number: " + inputNumber);
+            if (query != null) {
+                String inputNumber = query.split("n=")[1];
 
-            IntFactorization intFact = new IntFactorization();
-            try {
-                ArrayList<BigInteger> result = intFact.calcPrimeFactors(new BigInteger(inputNumber));
-                t.sendResponseHeaders(200, result.toString().length());
+                IntFactorization intFact = new IntFactorization();
+                try {
+                    ArrayList<BigInteger> result = intFact.calcPrimeFactors(new BigInteger(inputNumber));
+                    t.sendResponseHeaders(200, result.toString().length());
+                    OutputStream os = t.getResponseBody();
+                    os.write(result.toString().getBytes());
+                    os.close();
+                } catch (Exception e) {
+                    logger.fatal("Got exception when trying to factorize:");
+                    logger.fatal(e);
+                    t.sendResponseHeaders(500, 0);
+                    t.getResponseBody().close();
+                }
+            } else {
+                t.sendResponseHeaders(200, FORM.length());
                 OutputStream os = t.getResponseBody();
-                os.write(result.toString().getBytes());
+                os.write(FORM.getBytes());
                 os.close();
-            } catch (Exception e) {
-                logger.fatal("Got exception when trying to factorize:");
-                logger.fatal(e);
-                t.sendResponseHeaders(500, 0);
-                t.getResponseBody().close();
-                return;
             }
-
-            t.sendResponseHeaders(200, 0);
-            t.getResponseBody().close();
         } else {
             logger.warn("Unsupported method");
             t.sendResponseHeaders(405, 0);
