@@ -14,7 +14,7 @@ public class IntFactorization {
     private BigInteger divisor = new BigInteger("2");
     private ArrayList<BigInteger> factors = new ArrayList<BigInteger>();
 
-    private ArrayList<BigInteger>  calcPrimeFactors(BigInteger num) {
+    public ArrayList<BigInteger>  calcPrimeFactors(BigInteger num) {
         if (num.compareTo(one)==0) {
             return factors;
         }
@@ -23,12 +23,5 @@ public class IntFactorization {
         }
         factors.add(divisor);
         return calcPrimeFactors(num.divide(divisor));
-    }
-
-    public ArrayList<BigInteger> callFactorize(BigInteger num) {
-        logger.info("Factorizing " + num + "...");
-        calcPrimeFactors(num);
-        logger.info("Factorization result: " + factors);
-        return factors;
     }
 }

@@ -36,7 +36,12 @@ public class HandleFactorize implements HttpHandler {
 
                 IntFactorization intFact = new IntFactorization();
                 try {
-                    ArrayList<BigInteger> result = intFact.callFactorize(new BigInteger(inputNumber));
+                    logger.info("Starting factorization of " + inputNumber + "...");
+                    long startTime = System.currentTimeMillis();
+                    ArrayList<BigInteger> result = intFact.calcPrimeFactors(new BigInteger(inputNumber));
+                    long stopTime = System.currentTimeMillis();
+                    logger.info("Factorization took " + (stopTime - startTime) + "ms");
+                    logger.info("Factorization result: " + result);
                     t.sendResponseHeaders(200, result.toString().length());
                     OutputStream os = t.getResponseBody();
                     os.write(result.toString().getBytes());

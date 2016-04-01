@@ -2,35 +2,28 @@ package pt.ulisboa.tecnico.cnv.instrumentation;
 
 import java.io.File;
 import java.util.Enumeration;
-import java.util.Collections;
 import java.util.Vector;
+import java.util.HashMap;
+import java.lang.Thread;
 
 import BIT.highBIT.BasicBlock;
 import BIT.highBIT.ClassInfo;
-import BIT.highBIT.Instruction;
-import BIT.highBIT.InstructionTable;
 import BIT.highBIT.Routine;
-import BIT.lowBIT.CONSTANT_Class_Info;
-import BIT.lowBIT.CONSTANT_Utf8_Info;
-import BIT.lowBIT.ClassFile;
-import BIT.lowBIT.Cp_Info;
-import BIT.lowBIT.Method_Info;
 
 import org.apache.log4j.Logger;
 
 public class InstrumentationTool {
     final static Logger logger = Logger.getLogger(InstrumentationTool.class);
 
-    public static int threadCount = 0;
-
-	public static int numberOfInstructions = 0;
-	public static int numberOfConditionChecks = 0;
-	public static double grand_total = 0;
-    public static final String usage = "Usage: java InstrumentationTool input_class"
-        + "\nThis instrumentation counts the number of instructions and conditional checks on runtime."
-        + " The original class is replaced.";
-
     private static final String itPackage = "pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool";
+    private static final int NUM_FIELDS = 2;
+    private static final int INSTR = 0;
+    private static final int RECUR = 1;
+    public static HashMap<Long, Long[]> factorizers = new HashMap<Long, Long[]>();
+
+    public static final String usage = "Usage: java InstrumentationTool input_class"
+        + "\nThis instrumentation logs the number of threads, recursion depth and instruction count."
+        + "\nLogging is written to log4j-metrics.log";
 
 	public static void main(String args[]) {
         try {
@@ -41,9 +34,7 @@ public class InstrumentationTool {
 			File file_in = new File(args[0]);
 			String path = new String(file_in.getAbsolutePath());
             assert path.endsWith(".class");
-            //processClass(path);
-			// processFiles(class_in);
-            instrumentThreadCount(path);
+            instrument(path);
 		} catch (Exception e) {
 			System.err.println("Exception ocurred, check log for details.");
             e.printStackTrace();
@@ -53,20 +44,26 @@ public class InstrumentationTool {
 		}
 	}
 
+    /**
+     *  Instruments the given class file.
+     *  Class should be of type IntFactorization. Adds calls before and after callPrimeFactors
+     *  and before every basic block.
+     */
     @SuppressWarnings("unchecked")
-    public static void instrumentThreadCount(String classFile) {
+    public static void instrument(String classFile) {
         try {
-			ClassInfo ci = new ClassInfo(classFile); /* read & process the class */
+            ClassInfo ci = new ClassInfo(classFile); /* read & process the class */
 
 			Vector<Routine> routines = ci.getRoutines();
 
             for (Routine routine: routines) {
-                if (routine.getMethodName().equals("callFactorize")) {
-                    routine.addBefore(itPackage, "incThreads", 0);
-                    routine.addAfter(itPackage, "decThreads", 0);
-                    
-                    routine.addBefore(itPackage, "printThreadCount", 0);
-                    routine.addAfter(itPackage, "printThreadCount", 0);
+                if (routine.getMethodName().equals("calcPrimeFactors")) {
+                    routine.addBefore(itPackage, "calcPrimeCall", 0);
+			        for (Enumeration<BasicBlock> bb = routine.getBasicBlocks().elements();bb.hasMoreElements();){
+    		        	BasicBlock b = bb.nextElement();
+			        	b.addBefore(itPackage, "basicBlockCount", b.size());
+                    }
+                    routine.addAfter(itPackage, "calcPrimeReturn", 0);
                 }
 			}
 			ci.write(classFile);
@@ -78,107 +75,56 @@ public class InstrumentationTool {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public static void processClass(String classFile) {
-        try {
-            /* BIT/highBIT/ClassInfo */
-			ClassInfo ci = new ClassInfo(classFile); /* read & process the class */
-
-			/* BIT/lowBIT/ClassFile */
-			ClassFile cf = ci.getClassFile(); /* returns the class file in the BIT representation*/
-			short super_class_index = cf.getSuperClassIndex();
-
-            /* Type Cp_Info can be found in BIT/lowBIT/Cp_Info */
-			Cp_Info[] cpool = ci.getConstantPool(); /* ci is type BIT/highBIT/ClassInfo */
-
-			/*
-			 * get the element in the constant pool at super_class_index
-			 * its type is BIT/lowBIT/CONSTANT_Class_Info
-			 */
-			CONSTANT_Class_Info tmp_class_info = (CONSTANT_Class_Info) cpool[super_class_index];
-
-			/* get the name index from the CONSTANT_Class_Info element */
-			int name_index = tmp_class_info.name_index;
-
-			/*
-			 * get the element in the constant pool at name_index
-			 * its type is BIT/lowBIT/CONSTANT_Utf8_Info
-			 */
-			CONSTANT_Utf8_Info tmp_utf8_info = (CONSTANT_Utf8_Info) cpool[name_index];
-
-			/* convert the utf8 object to a string */
-			String supername = new String(tmp_utf8_info.bytes);
-
-			Vector<Routine> routines = ci.getRoutines();
-            /* BIT/highBIT/ClassInfo call that returns a vector
-    		 * containing all of the methods in the class */
-
-            for (Routine routine: routines) {
-			// for (Enumeration e=routines.elements(); e.hasMoreElements();) {
-    		// 	Routine routine = (Routine) e.nextElement();
-
-                /* nextElement returns type Object
-				 * hence, we need the cast */
-                /* see BIT/highBIT/Routine for all the ways to manipulate a routine */
-				System.err.println("class: " + routine.getClassName() + " method: "
-					+ routine.getMethodName()
-					+ " type: " + routine.getDescriptor());
-
-				/* see BIT/lowBIT/Method_Info */
-				Method_Info meth = routine.getMethodInfo();
-				System.out.println(routine.getInstructionCount());
-
-			    for(Enumeration<BasicBlock> bb = routine.getBasicBlocks().elements();bb.hasMoreElements();){
-    				BasicBlock b = bb.nextElement();
-					b.addBefore("pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool", "count", b.size());
-				}
-				for(Instruction instruction : routine.getInstructions()){
-				    if(InstructionTable.InstructionTypeTable[instruction.getOpcode()] == InstructionTable.CONDITIONAL_INSTRUCTION)
-    					instruction.addBefore("pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool", "countConditions", 1);
-				}
-				// if(routine.getMethodName().equals("calcPrimeFactors"))
-				// 	routine.addAfter("pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool","printICount", "nothing")nb;
-                if (routine.getMethodName().equals("callFactorize")) {
-				 	routine.addAfter("pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool","printICount", "nothing");
-                    routine.addAfter("pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool", "resetCounters", "nothing");
-                }
-			}
-			ci.write(classFile);
-        } catch (Exception e) {
-            System.err.println("Exception ocurred, check log for details.");
-            e.printStackTrace();
-            logger.fatal("Exception in processClass:");
-            logger.fatal(e.getMessage());
+    /**
+     * Creates or updates HashMap <K,V> when calcPrimeFactors is called.
+     * Creating  sets recursion depth at 1 and instructions at 0.
+     * Updating increments recursion depth
+     */
+    public static synchronized void calcPrimeCall(int notUsed) {
+        long threadID = Thread.currentThread().getId();
+        // Existing thread
+        if (factorizers.containsKey(threadID)) {
+            Long[] fields = factorizers.get(threadID);
+            fields[RECUR]++;
+            factorizers.put(threadID, fields);
+            logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " ++");
+        // New thread
+        } else {
+            Long[] fields = new Long[NUM_FIELDS];
+            fields[INSTR] = 0L;
+            fields[RECUR] = 1L;
+            factorizers.put(threadID, fields);
+            logger.info("NUM_THREADS: " + factorizers.size());
+            logger.info("STARTING TID:" + threadID);
         }
     }
 
- 	public static synchronized void printICount(String foo) {
-        logger.info("prime was calculated in " + numberOfInstructions + " instructions ");
-        logger.info("prime was calculated with " + numberOfConditionChecks + " conditions ");
+    /**
+     * Removes or updates HashMap <K,V> when calcPrimeFactors returns.
+     * Removing deletes value from HashMap
+     * Updating decrements recursion depth
+     */
+    public static synchronized void calcPrimeReturn(int notUsed) {
+        long threadID = Thread.currentThread().getId();
+        Long[] fields = factorizers.get(threadID);
+        // Last recursion?
+        if (--fields[RECUR] == 0) {
+            factorizers.remove(threadID);
+            logger.info("ENDING TID:" + threadID + " NUM_INSTR:" + fields[INSTR]);
+            logger.info("NUM_THREADS: " + factorizers.size());
+        } else {
+            factorizers.put(threadID, fields);
+            logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " --");
+        }
     }
 
- 	public static synchronized void countConditions(int incr){
- 		numberOfConditionChecks +=incr;
- 	}
-
-    public static synchronized void resetCounters(String foo) {
-        numberOfInstructions = 0;
-        numberOfConditionChecks = 0;
-    }
-
-    public static synchronized void count(int incr) {
-    	numberOfInstructions += incr;
-    }
-
-    public static synchronized void incThreads(int notUsed) {
-        threadCount++;
-    }
-
-    public static synchronized void decThreads(int notUsed) {
-        threadCount--;
-    }
-
-    public static synchronized void printThreadCount(int notUsed) {
-        logger.info("#Threads=" + threadCount);
+    /**
+     * Increments number of instructions by given basic block size.
+     */
+    public static synchronized void basicBlockCount(int size) {
+        long threadID = Thread.currentThread().getId();
+        Long[] fields = factorizers.get(threadID);
+        fields[INSTR] += size;
+        factorizers.put(threadID, fields);
     }
 }

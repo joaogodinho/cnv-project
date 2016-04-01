@@ -49,7 +49,7 @@ limitReached:
             IntFactorization intFact;
             for (BigInteger bi: numbers) {
                 intFact = new IntFactorization();
-                intFact.callFactorize(bi);
+                intFact.calcPrimeFactors(bi);
             }
         } else {
             System.out.println("No numbers to test.");
