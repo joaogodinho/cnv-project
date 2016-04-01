@@ -12,14 +12,3 @@ update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk1.7.0_79/bin/java
 update-alternatives --install /usr/bin/javap javap /opt/jdk/jdk1.7.0_79/bin/javap 100
 # Verify with java/javac/javap -version
 ```
-
-## Installing `sbt`
-```
-wget https://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.11/sbt-launch.jar
-# Move sbt-launch.jar to ~/bin (make sure ~/bin is in $PATH, Ubuntu does this auto, just restart)
-mv sbt-launch.jar ~/bin
-# Create file ~/bin/sbt with the following:
-#!/bin/bash
-SBT_OPTS="-Xms512M -Xmx1536M -Xss1M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256M"
-java $SBT_OPTS -jar `dirname $0`/sbt-launch.jar "$@"
-```
