@@ -1,5 +1,6 @@
 target/
 log4j-application.log
+log4j-metrics.log
 .syntastic_javac_config
 .gradle
 build/
