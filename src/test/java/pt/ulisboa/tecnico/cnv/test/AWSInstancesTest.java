@@ -5,7 +5,7 @@ import org.junit.Before;
 
 import java.util.ArrayList;
 
-import pt.ulisboa.tecnico.cnv.balancerserver.AWS;
+import pt.ulisboa.tecnico.cnv.proxyserver.AWS;
 
 public class AWSInstancesTest {
 
