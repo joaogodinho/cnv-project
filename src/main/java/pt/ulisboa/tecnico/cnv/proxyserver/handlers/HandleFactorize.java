@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.cnv.balancerserver.handlers;
+package pt.ulisboa.tecnico.cnv.proxyserver.handlers;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,13 +13,18 @@ import com.sun.net.httpserver.HttpHandler;
 import java.math.BigInteger;
 import java.util.ArrayList;
 
+import pt.ulisboa.tecnico.cnv.proxyserver.BalancerRoundRobin;
+
 public class HandleFactorize implements HttpHandler {
     final static Logger logger = Logger.getLogger(HandleFactorize.class);
 
     final static String FORM = "<html><body><form method='get'>Number: <input type='text' name='n'></input><br><input type='submit'></input></form></body></html>";
 
-    public HandleFactorize() {
+    private BalancerRoundRobin balancer;
+
+    public HandleFactorize(BalancerRoundRobin balancer) {
         super();
+        this.balancer = balancer;
         logger.info("Setting context for Factorize");
     }
     @Override
@@ -31,9 +36,7 @@ public class HandleFactorize implements HttpHandler {
 
             if (query != null) {
                 String inputNumber = query.split("n=")[1];
-                // TODO Pick a httpserver to send the request
-                // and wait for the reply, then send as a response
-                String tempReply = "IT'S BEING DEVELOPED, CHILL BRO";
+                String tempReply = balancer.requestInstance(inputNumber);
                 t.sendResponseHeaders(200, tempReply.length());
                 OutputStream os = t.getResponseBody();
                 os.write(tempReply.getBytes());

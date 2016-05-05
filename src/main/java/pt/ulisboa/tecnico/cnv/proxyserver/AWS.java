@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.cnv.balancerserver;
+package pt.ulisboa.tecnico.cnv.proxyserver;
 
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.auth.AWSCredentials;
@@ -8,6 +8,9 @@ import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeInstancesResult;
+import com.amazonaws.services.ec2.model.InstanceState;
 
 public final class AWS {
     // AWS EC2 Endpoint (Frankfurt)
@@ -31,6 +34,9 @@ public final class AWS {
 
     private static AmazonEC2 ec2 = null;
     private static RunInstancesRequest runInstanceReq = null;
+
+    public static final int INST_PENDING = 0;
+    public static final int INST_RUNNING = 16;
 
     private AWS() { }
 
@@ -73,4 +79,11 @@ public final class AWS {
     }
 
     public static void getInstances() { }
+
+    public static int getInstanceStatus(String instanceId) {
+        DescribeInstancesRequest describeInstanceRequest = new DescribeInstancesRequest().withInstanceIds(instanceId);
+        DescribeInstancesResult describeInstanceResult = ec2.describeInstances(describeInstanceRequest);
+        InstanceState state = describeInstanceResult.getReservations().get(0).getInstances().get(0).getState();
+        return state.getCode();
+    }
 }

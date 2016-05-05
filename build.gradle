@@ -37,6 +37,7 @@ task runProxy(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
 
     main = 'pt.ulisboa.tecnico.cnv.proxyserver.Proxy'
+    standardInput = System.in
 
     jvmArgs "-XX:-UseSplitVerifier"
     println jvmArgs
