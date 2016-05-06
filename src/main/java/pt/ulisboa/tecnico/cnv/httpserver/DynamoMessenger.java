@@ -21,10 +21,10 @@ public class DynamoMessenger implements Runnable{
 				String message = HTTPServer.queue.take();  
 				switch(message){
 				case INCREMENT_THREADS : 
-					DynamoConnecter.incrementThreadNumber("lel");
+					DynamoConnecter.incrementThreadNumber(HTTPServer.instanceID);
 					break;
 				case DECREMENT_THREADS :
-					DynamoConnecter.decrementThreadNumber("lil");
+					DynamoConnecter.decrementThreadNumber(HTTPServer.instanceID);
 					break;
 				default: System.out.println("shit message yo!");
 				}

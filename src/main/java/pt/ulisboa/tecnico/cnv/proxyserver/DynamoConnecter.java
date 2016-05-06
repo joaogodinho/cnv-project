@@ -19,6 +19,8 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
 
+import pt.ulisboa.tecnico.cnv.httpserver.HTTPServer;
+
 public final class DynamoConnecter {
 	
 	private static final String TABLE_NAME = "thread-metrics";
@@ -58,7 +60,7 @@ public final class DynamoConnecter {
         DynamoDB dynamo = new DynamoDB(getClient());
         Table instancesTable = dynamo.getTable(TABLE_NAME);
         Item item = new Item()
-        		.withPrimaryKey(PRIMARY_KEY,InstanceID)
+        		.withPrimaryKey(PRIMARY_KEY,HTTPServer.instanceID)
         		.withNumber("Threads", 0);
         		
         instancesTable.putItem(item);
@@ -73,7 +75,7 @@ public final class DynamoConnecter {
 		expressionAttributeValues.put(":incr", 1);
 		
 		instancesTable.updateItem(
-			    PRIMARY_KEY, InstanceID, 
+			    PRIMARY_KEY, instanceID, 
 			    "set #Threads = #Threads + :incr", 
 			    expressionAttributeNames, 
 			    expressionAttributeValues);
@@ -89,7 +91,7 @@ public final class DynamoConnecter {
 		expressionAttributeValues.put(":incr", 1);
 		
 		instancesTable.updateItem(
-			    PRIMARY_KEY, InstanceID, 
+			    PRIMARY_KEY, instanceID, 
 			    "set #Threads = #Threads - :incr", 
 			    expressionAttributeNames, 
 			    expressionAttributeValues);

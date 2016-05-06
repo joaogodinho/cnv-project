@@ -2,70 +2,62 @@ package pt.ulisboa.tecnico.cnv.proxyserver;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-import java.util.Scanner;
 
 import com.sun.net.httpserver.HttpServer;
 
 import org.apache.log4j.Logger;
 
 import pt.ulisboa.tecnico.cnv.httpserver.Path;
-import pt.ulisboa.tecnico.cnv.proxyserver.balancer.Balancer;
-import pt.ulisboa.tecnico.cnv.proxyserver.balancer.RoundRobinBalancer;
+import pt.ulisboa.tecnico.cnv.proxyserver.Balancer;
 import pt.ulisboa.tecnico.cnv.proxyserver.Scaler;
-import pt.ulisboa.tecnico.cnv.proxyserver.handlers.HandleFactorize;
 
 public class Proxy {
     final static Logger logger = Logger.getLogger(Proxy.class);
-    private static int PORT = 8080;
+    private static int PORT = 80;
     private static int POOL_SIZE = 10;
-    private HttpServer server = null;
-    private ExecutorService serverPool = null;
-
+    private static HttpServer server = null;
+    private static Proxy proxy = null;
     private static Balancer balancer = null;
     private static Scaler scaler = null;
 
     public Proxy() throws Exception {
-        balancer = new RoundRobinBalancer();
-        scaler = new Scaler(balancer);
-        serverPool = Executors.newFixedThreadPool(POOL_SIZE);
+        logger.info("Setting hook for TERM signal.");
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                logger.info("Got TERM signal");
+                proxy.stop();
+            }
+        });
+
+        balancer = new Balancer();
+        scaler = new Scaler();
+
+        this.start();
     }
 
     public static void main(String[] args) {
         try {
-            Proxy proxy = new Proxy();
-            proxy.start();
-
-            // Hold here for input
-            System.in.read();
-
-            proxy.terminate();
-            System.exit(0);
+            proxy = new Proxy();
         } catch (Exception e) {
-            logger.fatal("Exception raised while running Proxy:");
+            logger.fatal("Exception raised while launching Proxy:");
             logger.fatal(e);
         }
     }
 
-    private void terminate() throws Exception {
-        logger.info("Stopping Proxy...");
-        scaler.stopRunning();
-        scaler.join();
-        server.stop(1);
-        serverPool.shutdown();
-        logger.info("Proxy Stopped.");
+    private void stop() {
+        server.stop(0);
     }
 
-    public void start() throws Exception {
-        // logger.info("Launching Scaler...");
-        scaler.start();
+    private void start() throws Exception {
+        logger.info("Launching Scaler and Balancer...");
+        // TODO launch scaler and balancer threads
 
         logger.info("Launching Proxy at port " + PORT + "...");
         server = HttpServer.create(new InetSocketAddress(PORT), 0);
-        server.createContext(Path.FACTORIZE, new HandleFactorize(balancer));
+        // TODO set factorize context
+        // server.createContext(Path.FACTORIZE, new HandleFactorize());
         server.setExecutor(Executors.newFixedThreadPool(POOL_SIZE));
         server.start();
-
         logger.info("Proxy started.");
     }
 }
