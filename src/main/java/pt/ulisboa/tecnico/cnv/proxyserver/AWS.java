@@ -12,6 +12,9 @@ import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.InstanceState;
 
+
+import pt.ulisboa.tecnico.cnv.proxyserver.Instance;
+
 public final class AWS {
     // AWS EC2 Endpoint (Frankfurt)
     private static final String EC2_ENDPOINT = "ec2.eu-central-1.amazonaws.com";
@@ -65,10 +68,11 @@ public final class AWS {
         }
     }
 
-    // Creates a new instance and returns the instance ID
+    // Creates a new instance and returns the Instance
     public static String createInstance() {
         RunInstancesResult instanceResult = ec2.runInstances(runInstanceReq);
         return instanceResult.getReservation().getInstances().get(0).getInstanceId();
+
     }
 
     // Terminates the instance with the given ID
@@ -80,10 +84,13 @@ public final class AWS {
 
     public static void getInstances() { }
 
-    public static int getInstanceStatus(String instanceId) {
+    public static Instance getInstance(String instanceId) {
         DescribeInstancesRequest describeInstanceRequest = new DescribeInstancesRequest().withInstanceIds(instanceId);
         DescribeInstancesResult describeInstanceResult = ec2.describeInstances(describeInstanceRequest);
-        InstanceState state = describeInstanceResult.getReservations().get(0).getInstances().get(0).getState();
-        return state.getCode();
+        Instance instance = new Instance();
+        instance.setStatus(describeInstanceResult.getReservations().get(0).getInstances().get(0).getState().getCode());
+        instance.setId(describeInstanceResult.getReservations().get(0).getInstances().get(0).getInstanceId());
+        instance.setDns(describeInstanceResult.getReservations().get(0).getInstances().get(0).getPublicDnsName());
+        return instance;
     }
 }

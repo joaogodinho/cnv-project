@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.cnv.proxyserver;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.Scanner;
 
 import com.sun.net.httpserver.HttpServer;
@@ -9,7 +10,8 @@ import com.sun.net.httpserver.HttpServer;
 import org.apache.log4j.Logger;
 
 import pt.ulisboa.tecnico.cnv.httpserver.Path;
-import pt.ulisboa.tecnico.cnv.proxyserver.BalancerRoundRobin;
+import pt.ulisboa.tecnico.cnv.proxyserver.balancer.Balancer;
+import pt.ulisboa.tecnico.cnv.proxyserver.balancer.RoundRobinBalancer;
 import pt.ulisboa.tecnico.cnv.proxyserver.Scaler;
 import pt.ulisboa.tecnico.cnv.proxyserver.handlers.HandleFactorize;
 
@@ -17,21 +19,16 @@ public class Proxy {
     final static Logger logger = Logger.getLogger(Proxy.class);
     private static int PORT = 8080;
     private static int POOL_SIZE = 10;
-    private static HttpServer server = null;
-    private static BalancerRoundRobin balancer = null;
+    private HttpServer server = null;
+    private ExecutorService serverPool = null;
+
+    private static Balancer balancer = null;
     private static Scaler scaler = null;
 
     public Proxy() throws Exception {
-        // logger.info("Setting hook for TERM signal.");
-        // Runtime.getRuntime().addShutdownHook(new Thread() {
-        //     public void run() {
-        //         logger.info("Got TERM signal on Proxy.");
-        //         //scaler.stopRunning();
-        //     }
-        // });
-
-        balancer = new BalancerRoundRobin();
+        balancer = new RoundRobinBalancer();
         scaler = new Scaler(balancer);
+        serverPool = Executors.newFixedThreadPool(POOL_SIZE);
     }
 
     public static void main(String[] args) {
@@ -42,23 +39,25 @@ public class Proxy {
             // Hold here for input
             System.in.read();
 
-            proxy.stop();
+            proxy.terminate();
+            System.exit(0);
         } catch (Exception e) {
-            logger.fatal("Exception raised while launching Proxy:");
+            logger.fatal("Exception raised while running Proxy:");
             logger.fatal(e);
         }
     }
 
-    private void stop() throws Exception {
+    private void terminate() throws Exception {
         logger.info("Stopping Proxy...");
         scaler.stopRunning();
         scaler.join();
-        server.stop(0);
+        server.stop(1);
+        serverPool.shutdown();
         logger.info("Proxy Stopped.");
     }
 
     public void start() throws Exception {
-        logger.info("Launching Scaler...");
+        // logger.info("Launching Scaler...");
         scaler.start();
 
         logger.info("Launching Proxy at port " + PORT + "...");
