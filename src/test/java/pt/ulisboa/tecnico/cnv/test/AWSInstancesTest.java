@@ -19,9 +19,9 @@ public class AWSInstancesTest {
         instanceID = AWS.createInstance();
         System.out.println("Created instance with ID = " + instanceID);
         System.out.println("Sleeping for 1min before terminating instance...");
-        System.out.println(AWS.getInstanceStatus(instanceID));
+        System.out.println(AWS.getInstance(instanceID));
         Thread.sleep(60000);
-        System.out.println(AWS.getInstanceStatus(instanceID));
+        System.out.println(AWS.getInstance(instanceID));
         System.out.println("Terminating instance...");
         AWS.terminateInstance(instanceID);
     }
