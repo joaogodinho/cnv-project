@@ -20,7 +20,9 @@ task runServer(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
 
     main = 'pt.ulisboa.tecnico.cnv.httpserver.HTTPServer'
-
+    if ( project.hasProperty("appArgs") ) {
+        args Eval.me(appArgs)
+    }
     jvmArgs "-XX:-UseSplitVerifier"
     println jvmArgs
 }

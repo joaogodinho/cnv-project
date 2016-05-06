@@ -9,6 +9,8 @@ import java.lang.Thread;
 import BIT.highBIT.BasicBlock;
 import BIT.highBIT.ClassInfo;
 import BIT.highBIT.Routine;
+import pt.ulisboa.tecnico.cnv.httpserver.DynamoMessenger;
+import pt.ulisboa.tecnico.cnv.httpserver.HTTPServer;
 
 import org.apache.log4j.Logger;
 
@@ -96,6 +98,7 @@ public class InstrumentationTool {
             factorizers.put(threadID, fields);
             logger.info("NUM_THREADS: " + factorizers.size());
             logger.info("STARTING TID:" + threadID);
+            HTTPServer.queue.add(DynamoMessenger.INCREMENT_THREADS);
         }
     }
 
@@ -112,6 +115,7 @@ public class InstrumentationTool {
             factorizers.remove(threadID);
             logger.info("ENDING TID:" + threadID + " NUM_INSTR:" + fields[INSTR]);
             logger.info("NUM_THREADS: " + factorizers.size());
+            HTTPServer.queue.add(DynamoMessenger.DECREMENT_THREADS);
         } else {
             factorizers.put(threadID, fields);
             logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " --");

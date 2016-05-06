@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.cnv.balancerserver.handlers;
+package pt.ulisboa.tecnico.cnv.proxyserver.handlers;
 
 import java.io.IOException;
 import java.io.OutputStream;
