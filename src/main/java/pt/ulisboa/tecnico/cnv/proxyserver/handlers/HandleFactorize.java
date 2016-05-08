@@ -51,9 +51,9 @@ public class HandleFactorize implements HttpHandler {
                 }
 
                 if (answer != null) {
-                    t.sendResponseHeaders(200, targetDns.length());
+                    t.sendResponseHeaders(200, answer.length());
                     OutputStream os = t.getResponseBody();
-                    os.write(targetDns.getBytes());
+                    os.write(answer.getBytes());
                     os.close();
                 } else {
                     t.sendResponseHeaders(500, 0);
@@ -73,7 +73,7 @@ public class HandleFactorize implements HttpHandler {
     }
 
     private String doRequest(String dns, String number) throws Exception {
-        String url = "http://" + dns + "/f.html?n=" + number;
+        String url = "http://" + dns + ":8080/f.html?n=" + number;
         logger.info("Doing request to: " + url);
 
         URL worker = new URL(url);
