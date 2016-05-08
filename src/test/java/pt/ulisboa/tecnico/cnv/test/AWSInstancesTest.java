@@ -9,10 +9,10 @@ import pt.ulisboa.tecnico.cnv.proxyserver.AWS;
 
 public class AWSInstancesTest {
 
-    @Before
+    //@Before
     public void initAWS() throws Exception { AWS.init(); }
 
-    @Test
+    //@Test
     public void createDeleteInstance() throws Exception {
         String instanceID;
         System.out.println("Creating new instance...");
@@ -26,7 +26,7 @@ public class AWSInstancesTest {
         AWS.terminateInstance(instanceID);
     }
 
-    @Test
+    //@Test
     public void createDeleteMultipleInstances() throws Exception {
         ArrayList<String> instanceIDs = new ArrayList<String>();
         System.out.println("Creating 5 instances...");

@@ -14,7 +14,7 @@ import pt.ulisboa.tecnico.cnv.factorization.IntFactorization;
 
 public class IntFactorizationTest {
 
-    @Test
+    //@Test
     public void primes1() {
         int limit = 100;
         ClassLoader classLoader = getClass().getClassLoader();
