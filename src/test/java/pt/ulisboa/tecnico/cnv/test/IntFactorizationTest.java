@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.Before;
 
 import java.math.BigInteger;
+import java.lang.Math;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -16,7 +17,7 @@ import java.math.BigInteger;
 import pt.ulisboa.tecnico.cnv.factorization.IntFactorization;
 
 public class IntFactorizationTest {
-    private int limit = 10000;
+    private int limit = 100000;
     private ArrayList<BigInteger> numbers;
 
     @Before
@@ -65,28 +66,49 @@ limitReached:
         }
     }
 
-    @Test
-    public void primes2() {
+    private ArrayList<BigInteger> generateSemiPrimes(int size) {
+        ArrayList<BigInteger> semiprimes = new ArrayList<BigInteger>();
         Random rand = new Random(new Date().getTime());
-        int tempLimit = limit;
+        int tempLimit = size;
         if (numbers.size() > 0) {
-            ArrayList<BigInteger> semiprimes = new ArrayList<BigInteger>();
-            while (semiprimes.size() < limit) {
+            while (semiprimes.size() < tempLimit) {
                 BigInteger semi = numbers.get(rand.nextInt(limit))
                     .multiply(numbers.get(rand.nextInt(limit)));
-                //if (semi.bitLength() <= 17) {
-                    semiprimes.add(semi);
-                    System.out.println(semi.bitLength());
-                //}
+                semiprimes.add(semi);
+                System.out.println(semi.bitLength());
             }
-            assert semiprimes.size() == limit;
-            IntFactorization intFact;
-            for (BigInteger bi: semiprimes) {
-                intFact = new IntFactorization();
-                intFact.calcPrimeFactors(bi);
-            }
-        } else {
-            System.out.println("No numbers to test.");
         }
+        return semiprimes;
+    }
+
+    @Test
+    public void primes2() {
+        ArrayList<BigInteger> semiprimes = generateSemiPrimes(limit);
+        IntFactorization intFact;
+        for (BigInteger bi: semiprimes) {
+            intFact = new IntFactorization();
+            intFact.calcPrimeFactors(bi);
+        }
+    }
+
+    //@Test
+    public void testRegression() {
+        ArrayList<BigInteger> semiprimes = generateSemiPrimes(100000);
+        IntFactorization intFact;
+        for (BigInteger bi: semiprimes) {
+            intFact = new IntFactorization();
+            intFact.calcPrimeFactors(bi);
+        }
+    }
+
+    private long predictNumbInstr(int bits) {
+        double CUBIC = 535.75,
+               SQUARE= -13187,
+               LINEAR= 136270,
+               ZERO  = -79587;
+        return (long) Math.floor(CUBIC * Math.pow(bits, 3) +
+                          SQUARE * Math.pow(bits, 2) +
+                          LINEAR * bits +
+                          ZERO);
     }
 }
