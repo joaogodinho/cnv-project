@@ -90,7 +90,11 @@ limitReached:
         }
     }
 
-    @Test
+    // Get 100 000 random semiprimes, print the
+    // number of bits of each one and pass them
+    // to IntFactorization, which returns the number
+    // of instructions
+    //@Test
     public void semiPrimesInstr() {
         ArrayList<BigInteger> semiprimes = generateSemiPrimes(100000);
         IntFactorization intFact;
@@ -98,52 +102,5 @@ limitReached:
             intFact = new IntFactorization();
             intFact.calcPrimeFactors(bi);
         }
-    }
-
-
-    //@Test
-    public void primes1() {
-        if (numbers.size() > 0) {
-            IntFactorization intFact;
-            for (BigInteger bi: numbers) {
-                //System.out.println(bi.bitLength());
-                intFact = new IntFactorization();
-                intFact.calcPrimeFactors(bi);
-            }
-        } else {
-            System.out.println("No numbers to test.");
-        }
-    }
-
-
-    //@Test
-    public void primes2() {
-        ArrayList<BigInteger> semiprimes = generateSemiPrimes(limit);
-        IntFactorization intFact;
-        for (BigInteger bi: semiprimes) {
-            intFact = new IntFactorization();
-            intFact.calcPrimeFactors(bi);
-        }
-    }
-
-    //@Test
-    public void testRegression() {
-        ArrayList<BigInteger> semiprimes = generateSemiPrimes(100000);
-        IntFactorization intFact;
-        for (BigInteger bi: semiprimes) {
-            intFact = new IntFactorization();
-            intFact.calcPrimeFactors(bi);
-        }
-    }
-
-    private long predictNumbInstr(int bits) {
-        double CUBIC = 535.75,
-               SQUARE= -13187,
-               LINEAR= 136270,
-               ZERO  = -79587;
-        return (long) Math.floor(CUBIC * Math.pow(bits, 3) +
-                          SQUARE * Math.pow(bits, 2) +
-                          LINEAR * bits +
-                          ZERO);
     }
 }
