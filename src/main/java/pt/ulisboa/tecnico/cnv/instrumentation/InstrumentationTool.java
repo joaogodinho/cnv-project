@@ -18,10 +18,12 @@ public class InstrumentationTool {
     final static Logger logger = Logger.getLogger(InstrumentationTool.class);
 
     private static final String itPackage = "pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool";
-    private static final int NUM_FIELDS = 2;
-    private static final int INSTR = 0;
-    private static final int RECUR = 1;
-    public static HashMap<Long, Long[]> factorizers = new HashMap<Long, Long[]>();
+    private static long instCount = 0;
+    private static int depth = 0;
+    // private static final int NUM_FIELDS = 2;
+    // private static final int INSTR = 0;
+    // private static final int RECUR = 1;
+    // public static HashMap<Long, Long[]> factorizers = new HashMap<Long, Long[]>();
 
     public static final String usage = "Usage: java InstrumentationTool input_class"
         + "\nThis instrumentation logs the number of threads, recursion depth and instruction count."
@@ -83,23 +85,25 @@ public class InstrumentationTool {
      * Updating increments recursion depth
      */
     public static synchronized void calcPrimeCall(int notUsed) {
-        long threadID = Thread.currentThread().getId();
-        // Existing thread
-        if (factorizers.containsKey(threadID)) {
-            Long[] fields = factorizers.get(threadID);
-            fields[RECUR]++;
-            factorizers.put(threadID, fields);
-            logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " ++");
-        // New thread
-        } else {
-            Long[] fields = new Long[NUM_FIELDS];
-            fields[INSTR] = 0L;
-            fields[RECUR] = 1L;
-            factorizers.put(threadID, fields);
-            logger.info("NUM_THREADS: " + factorizers.size());
-            logger.info("STARTING TID:" + threadID);
-            HTTPServer.queue.add(DynamoMessenger.INCREMENT_THREADS);
-        }
+        // long threadID = Thread.currentThread().getId();
+        // // Existing thread
+        // if (factorizers.containsKey(threadID)) {
+        //     Long[] fields = factorizers.get(threadID);
+        //     fields[RECUR]++;
+        //     factorizers.put(threadID, fields);
+        //     logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " ++");
+        // // New thread
+        // } else {
+        //     Long[] fields = new Long[NUM_FIELDS];
+        //     fields[INSTR] = 0L;
+        //     fields[RECUR] = 1L;
+        //     factorizers.put(threadID, fields);
+        //     logger.info("NUM_THREADS: " + factorizers.size());
+        //     logger.info("STARTING TID:" + threadID);
+        //     HTTPServer.queue.add(DynamoMessenger.INCREMENT_THREADS);
+        // }
+        logger.info("CalcPrime call");
+        depth++;
     }
 
     /**
@@ -108,17 +112,21 @@ public class InstrumentationTool {
      * Updating decrements recursion depth
      */
     public static synchronized void calcPrimeReturn(int notUsed) {
-        long threadID = Thread.currentThread().getId();
-        Long[] fields = factorizers.get(threadID);
-        // Last recursion?
-        if (--fields[RECUR] == 0) {
-            factorizers.remove(threadID);
-            logger.info("ENDING TID:" + threadID + " NUM_INSTR:" + fields[INSTR]);
-            logger.info("NUM_THREADS: " + factorizers.size());
-            HTTPServer.queue.add(DynamoMessenger.DECREMENT_THREADS);
-        } else {
-            factorizers.put(threadID, fields);
-            logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " --");
+        // long threadID = Thread.currentThread().getId();
+        // Long[] fields = factorizers.get(threadID);
+        // // Last recursion?
+        // if (--fields[RECUR] == 0) {
+        //     factorizers.remove(threadID);
+        //     logger.info("ENDING TID:" + threadID + " NUM_INSTR:" + fields[INSTR]);
+        //     logger.info("NUM_THREADS: " + factorizers.size());
+        //     HTTPServer.queue.add(DynamoMessenger.DECREMENT_THREADS);
+        // } else {
+        //     factorizers.put(threadID, fields);
+        //     logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " --");
+        // }
+        if (--depth == 0) {
+            logger.info("INSTRUCTIONS COUNT: " + instCount);
+            instCount = 0;
         }
     }
 
@@ -126,9 +134,10 @@ public class InstrumentationTool {
      * Increments number of instructions by given basic block size.
      */
     public static synchronized void basicBlockCount(int size) {
-        long threadID = Thread.currentThread().getId();
-        Long[] fields = factorizers.get(threadID);
-        fields[INSTR] += size;
-        factorizers.put(threadID, fields);
+        instCount += size;
+        // long threadID = Thread.currentThread().getId();
+        // Long[] fields = factorizers.get(threadID);
+        // fields[INSTR] += size;
+        // factorizers.put(threadID, fields);
     }
 }

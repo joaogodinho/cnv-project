@@ -42,11 +42,11 @@ task runProxy(type: JavaExec) {
 
 compileJava {
     enabled = !('runServer' in project.gradle.startParameter.taskNames)
-    enabled = !('test' in project.gradle.startParameter.taskNames)
 }
 
 test {
     jvmArgs "-XX:-UseSplitVerifier"
 }
 
+test.dependsOn runInstrumentation
 jar.dependsOn runInstrumentation
