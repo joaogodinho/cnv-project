@@ -17,7 +17,7 @@ import java.math.BigInteger;
 import pt.ulisboa.tecnico.cnv.factorization.IntFactorization;
 
 public class IntFactorizationTest {
-    private int limit = 100000;
+    private int limit = 1000000;
     private ArrayList<BigInteger> numbers;
 
     @Before
@@ -52,20 +52,7 @@ limitReached:
         }
     }
 
-    //@Test
-    public void primes1() {
-        if (numbers.size() > 0) {
-            IntFactorization intFact;
-            for (BigInteger bi: numbers) {
-                //System.out.println(bi.bitLength());
-                intFact = new IntFactorization();
-                intFact.calcPrimeFactors(bi);
-            }
-        } else {
-            System.out.println("No numbers to test.");
-        }
-    }
-
+    // Returns a list of semiprimes with the given size
     private ArrayList<BigInteger> generateSemiPrimes(int size) {
         ArrayList<BigInteger> semiprimes = new ArrayList<BigInteger>();
         Random rand = new Random(new Date().getTime());
@@ -81,34 +68,39 @@ limitReached:
         return semiprimes;
     }
 
-    @Test
-    public void primes2() {
-        ArrayList<BigInteger> semiprimes = generateSemiPrimes(limit);
+    // Get 100 000 random primes from the primes list,
+    // print the number of bits of each one
+    // and pass them to IntFactorization, which
+    // returns the number of instructions
+    //@Test
+    public void primesInstr() {
+        ArrayList<BigInteger> primes = new ArrayList<BigInteger>();
+        Random rand = new Random(new Date().getTime());
+        int size = 100000;
+        while (primes.size() < size) {
+            BigInteger numb = numbers.get(rand.nextInt(limit));
+            primes.add(numb);
+            System.out.println(numb.bitLength());
+        }
+        assert primes.size() == size;
         IntFactorization intFact;
-        for (BigInteger bi: semiprimes) {
+        for (BigInteger bi: primes) {
             intFact = new IntFactorization();
             intFact.calcPrimeFactors(bi);
         }
     }
 
+    // Get 100 000 random semiprimes, print the
+    // number of bits of each one and pass them
+    // to IntFactorization, which returns the number
+    // of instructions
     //@Test
-    public void testRegression() {
+    public void semiPrimesInstr() {
         ArrayList<BigInteger> semiprimes = generateSemiPrimes(100000);
         IntFactorization intFact;
         for (BigInteger bi: semiprimes) {
             intFact = new IntFactorization();
             intFact.calcPrimeFactors(bi);
         }
-    }
-
-    private long predictNumbInstr(int bits) {
-        double CUBIC = 535.75,
-               SQUARE= -13187,
-               LINEAR= 136270,
-               ZERO  = -79587;
-        return (long) Math.floor(CUBIC * Math.pow(bits, 3) +
-                          SQUARE * Math.pow(bits, 2) +
-                          LINEAR * bits +
-                          ZERO);
     }
 }
