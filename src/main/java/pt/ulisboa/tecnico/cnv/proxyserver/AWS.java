@@ -16,6 +16,7 @@ import com.amazonaws.services.cloudwatch.model.Dimension;
 import com.amazonaws.services.cloudwatch.model.Datapoint;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
+import com.amazonaws.services.cloudwatch.model.PutMetricAlarmRequest;
 
 import java.util.Date;
 import java.util.List;
@@ -131,5 +132,14 @@ public final class AWS {
         // for (Datapoint dp: getMetricStatisticsResult.getDatapoints()) {
         //     logger.info("CPU utilization for instance " + instance.getId() + " = " + dp.getAverage());
         // }
+    }
+
+    public static void createAlarm() {
+        Dimension instanceDimension = new Dimension();
+        instanceDimension.setName("")
+        PutMetricAlarmRequest metricRequest = new PutMetricAlarmRequest()
+            .withAlarmName("Testing Alarm")
+            .withComparisonOperator(">=")
+
     }
 }
