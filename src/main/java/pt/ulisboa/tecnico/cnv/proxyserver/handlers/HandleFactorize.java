@@ -1,10 +1,10 @@
 package pt.ulisboa.tecnico.cnv.proxyserver.handlers;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
-
+import java.io.OutputStream;
+import java.math.BigInteger;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -13,9 +13,9 @@ import org.apache.log4j.Logger;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-
+import pt.ulisboa.tecnico.cnv.proxyserver.DynamoConnecter;
+import pt.ulisboa.tecnico.cnv.proxyserver.Instance;
+import pt.ulisboa.tecnico.cnv.proxyserver.NumberCrunchingEntry;
 import pt.ulisboa.tecnico.cnv.proxyserver.balancer.Balancer;
 
 public class HandleFactorize implements HttpHandler {
@@ -39,13 +39,18 @@ public class HandleFactorize implements HttpHandler {
 
             if (query != null) {
                 String inputNumber = query.split("n=")[1];
-                String targetDns = balancer.requestInstance(inputNumber);
+                Instance target = balancer.requestInstance(inputNumber);
+                String targetDns = target.getDns();
                 logger.info("Got " + targetDns + " target from Balancer");
-
+                NumberCrunchingEntry entry = null;
                 String answer = null;
                 try {
-                    answer = doRequest(targetDns, inputNumber);
+                	entry = DynamoConnecter.createEntryGetID(target.getId(),new BigInteger(inputNumber).bitLength());
+                	target.insertTask(entry);
+                	answer = doRequest(targetDns, inputNumber);
                 } catch (Exception e) {
+                	target.removeTask(entry);
+                	DynamoConnecter.deleteEntry(entry.getID());
                     logger.fatal("Got exception when requesting answer from worker:");
                     logger.fatal(e);
                 }
@@ -59,6 +64,8 @@ public class HandleFactorize implements HttpHandler {
                     t.sendResponseHeaders(500, 0);
                     t.getResponseBody().close();
                 }
+            	target.removeTask(entry);
+            	DynamoConnecter.deleteEntry(entry.getID());
             } else {
                 t.sendResponseHeaders(200, FORM.length());
                 OutputStream os = t.getResponseBody();
