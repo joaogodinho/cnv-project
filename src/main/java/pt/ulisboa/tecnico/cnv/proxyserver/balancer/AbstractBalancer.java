@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 
-import pt.ulisboa.tecnico.cnv.proxyserver.balancer.Balancer;
+import pt.ulisboa.tecnico.cnv.proxyserver.DynamoConnecter;
 import pt.ulisboa.tecnico.cnv.proxyserver.Instance;
 
 public abstract class AbstractBalancer implements Balancer {
@@ -14,6 +14,7 @@ public abstract class AbstractBalancer implements Balancer {
 
     public AbstractBalancer() {
         logger.info("Initializing Balancer...");
+        DynamoConnecter.createCrunchingTable();
         workers = new ArrayList<Instance>();
     }
 

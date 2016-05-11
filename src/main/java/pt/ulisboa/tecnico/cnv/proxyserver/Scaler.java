@@ -116,6 +116,7 @@ public class Scaler extends Thread {
 
     private void updateCPULoad() {
         for (Instance instance: workers) {
+            DynamoConnecter.getRunningNumbersOnServer(instance.getId());
             List<Datapoint> datapoints = AWS.getAvgCPU(instance);
             if (datapoints != null && datapoints.size() > 0) {
                 logger.info("Updating load average for " + instance.getId());

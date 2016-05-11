@@ -1,14 +1,15 @@
 package pt.ulisboa.tecnico.cnv.proxyserver;
 
-import com.amazonaws.services.cloudwatch.model.Datapoint;
+import java.util.concurrent.LinkedBlockingQueue;
 
-import java.util.List;
-
-public class Instance {
+public class Instance{
     private String instanceId;
     private String instanceDns;
     private int instanceStatus;
 
+    
+    private LinkedBlockingQueue<NumberCrunchingEntry> threads = new LinkedBlockingQueue<NumberCrunchingEntry>();
+    
     // Values for Exponential Moving Average
     // -1 notifies first time incrementing average
     private double cpuEMA = -1;
@@ -21,6 +22,14 @@ public class Instance {
         instanceId = id;
         instanceDns = dns;
     }
+    
+    public boolean insertTask(NumberCrunchingEntry entry){
+    	return this.threads.add(entry);
+    }
+    
+    public int getNumberCurrentThreads(){
+		return this.threads.size();
+	}
 
     public int getStatus() { return instanceStatus; }
 
@@ -54,4 +63,23 @@ public class Instance {
             return false;
         }
     }
+
+	public void removeTask(NumberCrunchingEntry entry) {
+		this.threads.remove(entry);
+	}
+	
+	private long getLowestCostThread(){
+		long cost = Long.MAX_VALUE; 
+		for(NumberCrunchingEntry c : this.threads){
+			long currentCost = c.getCurrentCost();
+			if(currentCost < cost) 
+				cost = currentCost;
+		}
+		return cost;
+	}
+
+	public Instance compareTo(Instance o) {
+		return this.getLowestCostThread() < o.getLowestCostThread() ? this : o;
+	}
+
 }
