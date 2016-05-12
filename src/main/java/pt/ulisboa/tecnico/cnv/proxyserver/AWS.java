@@ -133,13 +133,4 @@ public final class AWS {
         //     logger.info("CPU utilization for instance " + instance.getId() + " = " + dp.getAverage());
         // }
     }
-
-    public static void createAlarm() {
-        Dimension instanceDimension = new Dimension();
-        instanceDimension.setName("")
-        PutMetricAlarmRequest metricRequest = new PutMetricAlarmRequest()
-            .withAlarmName("Testing Alarm")
-            .withComparisonOperator(">=")
-
-    }
 }
