@@ -18,7 +18,6 @@ public class DynamoMessenger implements Runnable{
 	@Override
 	public void run() {
 		try {
-			System.out.println("created DynamoMessenger");
 			while(true){
 				String message = HTTPServer.queue.take();
 				switch(message){

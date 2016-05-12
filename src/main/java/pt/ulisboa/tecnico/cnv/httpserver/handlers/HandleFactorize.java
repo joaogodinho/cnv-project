@@ -33,8 +33,9 @@ public class HandleFactorize implements HttpHandler {
             logger.info("Params are: " + query);
 
             if (query != null) {
-                String inputNumber = query.split("n=")[1],
-                       inputUniqId = query.split("id=")[1];
+                String[] values = query.split("&");
+                String inputNumber = values[0].split("n=")[1],
+                       inputUniqId = values[1].split("id=")[1];
 
                 IntFactorization intFact = new IntFactorization();
                 try {
@@ -72,8 +73,7 @@ public class HandleFactorize implements HttpHandler {
             }
         } else {
             logger.warn("Unsupported method");
-            t.sendResponseHeaders(405, 0);
-            t.getResponseBody().close();
+            t.sendResponseHeaders(405, 0); t.getResponseBody().close();
         }
     }
 }
