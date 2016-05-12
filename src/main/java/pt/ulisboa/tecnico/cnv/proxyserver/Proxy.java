@@ -63,7 +63,7 @@ public class Proxy {
 
         logger.info("Launching Proxy at port " + PORT + "...");
         server = HttpServer.create(new InetSocketAddress(PORT), 0);
-        server.createContext(Path.FACTORIZE, new HandleFactorize(balancer));
+        server.createContext(Path.FACTORIZE, new HandleFactorize(scaler, balancer));
         server.setExecutor(Executors.newFixedThreadPool(POOL_SIZE));
         server.start();
 

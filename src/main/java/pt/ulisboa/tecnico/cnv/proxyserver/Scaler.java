@@ -21,9 +21,8 @@ public class Scaler extends Thread {
     // Cooldown (in milliseconds) after launching a new instance
     private final static int COOLDOWN = 2 * 60 * 1000;
     private long lastStart;
-    // CPU threshold, in percentage
-    private final static int CPU_MAX_LOAD = 60;
-    private final static int CPU_MIN_LOAD = 10;
+    private final static int REQ = 0;
+    private final static int BITS= 1;
 
     private Balancer balancer = null;
     private boolean running = true;
@@ -33,12 +32,22 @@ public class Scaler extends Thread {
     // one is running. Serves as a control mechanism.
     private String lastWorker = null;
 
+    // Used to calculate the number of requests/sec and
+    // average number of bits
     private int num_req = 0;
+    private int total_bits = 0;
 
-    public synchronized void incNumReq() { num_req++; }
-    public synchronized int getNumReq() {
-        int temp = num_req;
+    public synchronized void incReq(int num_bits) {
+        num_req++;
+        total_bits += num_bits;
+    }
+
+    // Returns an array with number of requests
+    // and total number of bits. Resets the counters
+    public synchronized int[] getReqMetrics() {
+        int[] temp = { num_req, total_bits };
         num_req = 0;
+        total_bits = 0;
         return temp;
     }
 
@@ -104,6 +113,13 @@ public class Scaler extends Thread {
     public void run() {
         logger.info("Running Scaler thread...");
         while (this.running) {
+            int[] reqs = getReqMetrics();
+            if (reqs[REQ] != 0 && reqs[BITS] != 0) {
+                float reqsec = (float) reqs[REQ] / SLEEP_TIME / 1000;
+                float bitsec = (float) reqs[BITS] / reqs[REQ] / SLEEP_TIME / 1000;
+                logger.info("Average req/sec = " + reqsec);
+                logger.info("Average bits/sec = " + bitsec);
+            }
             logger.info("Checking workers status...");
             updateLastWorker();
 

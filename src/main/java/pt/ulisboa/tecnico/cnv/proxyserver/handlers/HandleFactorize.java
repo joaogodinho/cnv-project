@@ -17,16 +17,19 @@ import pt.ulisboa.tecnico.cnv.proxyserver.DynamoConnecter;
 import pt.ulisboa.tecnico.cnv.proxyserver.Instance;
 import pt.ulisboa.tecnico.cnv.proxyserver.NumberCrunchingEntry;
 import pt.ulisboa.tecnico.cnv.proxyserver.balancer.Balancer;
+import pt.ulisboa.tecnico.cnv.proxyserver.Scaler;
 
 public class HandleFactorize implements HttpHandler {
     final static Logger logger = Logger.getLogger(HandleFactorize.class);
 
     final static String FORM = "<html><body><form method='get'>Number: <input type='text' name='n'></input><br><input type='submit'></input></form></body></html>";
 
+    private Scaler scaler;
     private Balancer balancer;
 
-    public HandleFactorize(Balancer balancer) {
+    public HandleFactorize(Scaler scaler, Balancer balancer) {
         super();
+        this.scaler = scaler;
         this.balancer = balancer;
         logger.info("Setting context for Factorize");
     }
@@ -45,7 +48,9 @@ public class HandleFactorize implements HttpHandler {
                 NumberCrunchingEntry entry = null;
                 String answer = null;
                 try {
-                	entry = DynamoConnecter.createEntryGetID(target.getId(),new BigInteger(inputNumber).bitLength());
+                    BigInteger number = new BigInteger(inputNumber);
+                    scaler.incReq(number.bitLength());
+                	entry = DynamoConnecter.createEntryGetID(target.getId(),number.bitLength());
                 	target.insertTask(entry);
                 	answer = doRequest(targetDns, inputNumber);
                 } catch (Exception e) {
