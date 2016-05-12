@@ -27,7 +27,7 @@ public final class AWS {
     private static final String CW_ENDPOINT = "monitoring.eu-central-1.amazonaws.com";
     // Amazon Linux AMI 2016.03.0
     // TODO Change to ID with running server (workers)
-    private static final String IMAGE_ID = "ami-5095783f";
+    private static final String IMAGE_ID = "ami-e47d908b";
 
     // Instance type to be used, should be final
     private static final String INST_TYPE = "t2.micro";

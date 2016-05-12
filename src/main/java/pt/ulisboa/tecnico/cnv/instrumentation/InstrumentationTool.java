@@ -18,7 +18,7 @@ public class InstrumentationTool {
 
     private static final String itPackage = "pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool";
 
-    private static final long THRESHOLD = 10000;
+    private static final long THRESHOLD = 10000000;
     private static final int NUM_FIELDS = 3;
     private static final int UNIQID = 0;
     private static final int INSTR  = 1;

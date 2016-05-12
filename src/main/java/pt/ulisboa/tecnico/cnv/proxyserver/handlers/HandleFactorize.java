@@ -50,29 +50,31 @@ public class HandleFactorize implements HttpHandler {
                 try {
                     BigInteger number = new BigInteger(inputNumber);
                     scaler.incReq(number.bitLength());
-                	entry = DynamoConnecter.createEntryGetID(target.getId(),number.bitLength());
-                	target.insertTask(entry);
-                	answer = doRequest(targetDns, inputNumber);
+                    entry = DynamoConnecter.createEntryGetID(target.getId(),number.bitLength());
+                    target.insertTask(entry);
+                    answer = doRequest(targetDns, inputNumber, entry.getID().toString());
                 } catch (Exception e) {
-                	target.removeTask(entry);
-                	DynamoConnecter.deleteEntry(entry.getID());
+                    target.removeTask(entry);
+                    DynamoConnecter.deleteEntry(entry.getID());
                     logger.fatal("Got exception when requesting answer from worker:");
                     logger.fatal(e);
                 }
 
                 if (answer != null) {
+                    target.removeTask(entry);
+                    long number_instructions = DynamoConnecter.getNumberOfInstructions(String.valueOf(entry.getID()));
+                    DynamoConnecter.addStatisticEntry(entry.getNumberBits(), number_instructions);
+                    DynamoConnecter.deleteEntry(entry.getID());
                     t.sendResponseHeaders(200, answer.length());
                     OutputStream os = t.getResponseBody();
                     os.write(answer.getBytes());
                     os.close();
                 } else {
+                    target.removeTask(entry);
+                    DynamoConnecter.deleteEntry(entry.getID());
                     t.sendResponseHeaders(500, 0);
                     t.getResponseBody().close();
                 }
-            	target.removeTask(entry);
-            	long number_instructions = DynamoConnecter.getNumberOfInstructions(String.valueOf(entry.getID()));
-            	DynamoConnecter.addStatisticEntry(entry.getNumberBits(), number_instructions);
-            	DynamoConnecter.deleteEntry(entry.getID());
             } else {
                 t.sendResponseHeaders(200, FORM.length());
                 OutputStream os = t.getResponseBody();
@@ -86,8 +88,8 @@ public class HandleFactorize implements HttpHandler {
         }
     }
 
-    private String doRequest(String dns, String number) throws Exception {
-        String url = "http://" + dns + ":8080/f.html?n=" + number;
+    private String doRequest(String dns, String number, String uniqId) throws Exception {
+        String url = "http://" + dns + ":8080/f.html?n=" + number + "&id=" + uniqId;
         logger.info("Doing request to: " + url);
 
         URL worker = new URL(url);
