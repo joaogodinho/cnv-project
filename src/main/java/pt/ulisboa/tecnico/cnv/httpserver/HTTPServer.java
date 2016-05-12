@@ -16,7 +16,7 @@ public class HTTPServer {
     private static int PORT = 8080;
     private static int POOL_SIZE = 10;
     public static String instanceID;
-    public static LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<String>();
+    public static LinkedBlockingQueue<String[]> queue = new LinkedBlockingQueue<String[]>();
 
     public HTTPServer() throws Exception {
         logger.info("Launching HTTPServer at port " + PORT + "...");
@@ -33,7 +33,7 @@ public class HTTPServer {
 
     public static void main(String[] args) {
         try {
-        	instanceID = args[0];
+//        	instanceID = args[0];
             new HTTPServer();
         } catch (Exception e) {
             logger.fatal("Exception raised while launching HTTPServer:");

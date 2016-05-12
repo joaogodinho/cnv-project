@@ -2,17 +2,16 @@ package pt.ulisboa.tecnico.cnv.instrumentation;
 
 import java.io.File;
 import java.util.Enumeration;
-import java.util.Vector;
 import java.util.HashMap;
-import java.lang.Thread;
+import java.util.Vector;
+
+import org.apache.log4j.Logger;
 
 import BIT.highBIT.BasicBlock;
 import BIT.highBIT.ClassInfo;
 import BIT.highBIT.Routine;
 import pt.ulisboa.tecnico.cnv.httpserver.DynamoMessenger;
 import pt.ulisboa.tecnico.cnv.httpserver.HTTPServer;
-
-import org.apache.log4j.Logger;
 
 public class InstrumentationTool {
     final static Logger logger = Logger.getLogger(InstrumentationTool.class);
@@ -103,8 +102,11 @@ public class InstrumentationTool {
         if (--fields[DEPTH] == 0) {
             logger.info("Stopping factorization on thread " + threadID);
             logger.info("Number of running factorizations: " + factorizers.size());
-            // TODO Update Dynamo
-            // HTTPServer.queue.add(fields[UNIQID].toString,
+            String [] params = new String[3];
+            params[0] = String.valueOf(fields[UNIQID]);
+            params[1] =String.valueOf(fields[INSTR]);
+            params[2] = DynamoMessenger.INCREMENT_INSTRUCTIONS;
+            HTTPServer.queue.add(params);
             //         threadID.toString,
             //         fields[INSTR],
             //         DynamoMessenger.INSCREMENT_INSTR);
@@ -119,12 +121,13 @@ public class InstrumentationTool {
         long threadID = Thread.currentThread().getId();
         Long[] fields = factorizers.get(threadID);
         if (fields[INSTR] + size > THRESHOLD) {
+            
+            String[] params = new String[3];
+            params[0] = String.valueOf(fields[UNIQID]);
+            params[1] = String.valueOf(fields[INSTR]);
+            params[2] = DynamoMessenger.INCREMENT_INSTRUCTIONS;
+            HTTPServer.queue.add(params);
             fields[INSTR] = (long) size;
-            // TODO Update Dynamo
-            // HTTPServer.queue.add(fields[UNIQID].toString,
-            //         threadID.toString(),
-            //         fields[INSTR],
-            //         DynamoMessenger.INCREMENT_INSTR);
         } else {
             fields[INSTR] += size;
         }

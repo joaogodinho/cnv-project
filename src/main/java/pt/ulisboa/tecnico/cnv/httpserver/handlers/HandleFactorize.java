@@ -2,16 +2,13 @@ package pt.ulisboa.tecnico.cnv.httpserver.handlers;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.math.BigInteger;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
 
 import pt.ulisboa.tecnico.cnv.factorization.IntFactorization;
 import pt.ulisboa.tecnico.cnv.instrumentation.InstrumentationTool;
@@ -39,10 +36,6 @@ public class HandleFactorize implements HttpHandler {
 
                 IntFactorization intFact = new IntFactorization();
                 try {
-                    // TODO Update Dynamo
-                    //HTTPServer.queue.add(inputUniqId,
-                    //        Thread.currentThread().getId(),
-                    //        DynamoMessenger.INCREMENT_THREADS);
                     logger.info("Starting factorization of " + inputNumber + "...");
                     long startTime = System.currentTimeMillis();
                     InstrumentationTool.insertUniqueId(inputUniqId);
@@ -60,10 +53,7 @@ public class HandleFactorize implements HttpHandler {
                     t.sendResponseHeaders(500, 0);
                     t.getResponseBody().close();
                 } finally {
-                    // TODO Update Dynamo
-                    //HTTPServer.queue.add(inputUniqId,
-                    //        Thread.currentThread().getId(),
-                    //        DynamoMessenger.INCREMENT_THREADS);
+                    
                 }
             } else {
                 t.sendResponseHeaders(200, FORM.length());

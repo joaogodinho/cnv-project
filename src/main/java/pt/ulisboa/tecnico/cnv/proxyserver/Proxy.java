@@ -34,6 +34,7 @@ public class Proxy {
     public static void main(String[] args) {
         try {
             Proxy proxy = new Proxy();
+            DynamoConnecter.createTables();
             proxy.start();
 
             // Hold here for input
