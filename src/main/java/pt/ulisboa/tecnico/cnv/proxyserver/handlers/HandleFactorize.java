@@ -65,6 +65,8 @@ public class HandleFactorize implements HttpHandler {
                     t.getResponseBody().close();
                 }
             	target.removeTask(entry);
+            	long number_instructions = DynamoConnecter.getNumberOfInstructions(String.valueOf(entry.getID()));
+            	DynamoConnecter.addStatisticEntry(entry.getNumberBits(), number_instructions);
             	DynamoConnecter.deleteEntry(entry.getID());
             } else {
                 t.sendResponseHeaders(200, FORM.length());
