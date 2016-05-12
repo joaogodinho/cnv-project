@@ -18,12 +18,13 @@ public class InstrumentationTool {
     final static Logger logger = Logger.getLogger(InstrumentationTool.class);
 
     private static final String itPackage = "pt/ulisboa/tecnico/cnv/instrumentation/InstrumentationTool";
-    private static long instCount = 0;
-    private static int depth = 0;
-    // private static final int NUM_FIELDS = 2;
-    // private static final int INSTR = 0;
-    // private static final int RECUR = 1;
-    // public static HashMap<Long, Long[]> factorizers = new HashMap<Long, Long[]>();
+
+    private static final long THRESHOLD = 10000;
+    private static final int NUM_FIELDS = 3;
+    private static final int UNIQID = 0;
+    private static final int INSTR  = 1;
+    private static final int DEPTH  = 2;
+    public static HashMap<Long, Long[]> factorizers = new HashMap<Long, Long[]>();
 
     public static final String usage = "Usage: java InstrumentationTool input_class"
         + "\nThis instrumentation logs the number of threads, recursion depth and instruction count."
@@ -79,65 +80,67 @@ public class InstrumentationTool {
         }
     }
 
-    /**
-     * Creates or updates HashMap <K,V> when calcPrimeFactors is called.
-     * Creating  sets recursion depth at 1 and instructions at 0.
-     * Updating increments recursion depth
-     */
+    // Updates the 
     public static synchronized void calcPrimeCall(int notUsed) {
-        // long threadID = Thread.currentThread().getId();
-        // // Existing thread
-        // if (factorizers.containsKey(threadID)) {
-        //     Long[] fields = factorizers.get(threadID);
-        //     fields[RECUR]++;
-        //     factorizers.put(threadID, fields);
-        //     logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " ++");
-        // // New thread
-        // } else {
-        //     Long[] fields = new Long[NUM_FIELDS];
-        //     fields[INSTR] = 0L;
-        //     fields[RECUR] = 1L;
-        //     factorizers.put(threadID, fields);
-        //     logger.info("NUM_THREADS: " + factorizers.size());
-        //     logger.info("STARTING TID:" + threadID);
-        //     HTTPServer.queue.add(DynamoMessenger.INCREMENT_THREADS);
-        // }
-        logger.info("CalcPrime call");
-        depth++;
+        // Gets the fields for the current thread
+        long threadID = Thread.currentThread().getId();
+        Long[] fields = factorizers.get(threadID);
+
+        // First time calling
+        if (++fields[DEPTH] == 1) {
+            logger.info("Starting new factorization on thread " + threadID);
+        } else {
+            logger.info("Found one factor on thread " + threadID);
+        }
+        factorizers.put(threadID, fields);
     }
 
-    /**
-     * Removes or updates HashMap <K,V> when calcPrimeFactors returns.
-     * Removing deletes value from HashMap
-     * Updating decrements recursion depth
-     */
+    // When the factorization ends notifies send an update to Dynamo
     public static synchronized void calcPrimeReturn(int notUsed) {
-        // long threadID = Thread.currentThread().getId();
-        // Long[] fields = factorizers.get(threadID);
-        // // Last recursion?
-        // if (--fields[RECUR] == 0) {
-        //     factorizers.remove(threadID);
-        //     logger.info("ENDING TID:" + threadID + " NUM_INSTR:" + fields[INSTR]);
-        //     logger.info("NUM_THREADS: " + factorizers.size());
-        //     HTTPServer.queue.add(DynamoMessenger.DECREMENT_THREADS);
-        // } else {
-        //     factorizers.put(threadID, fields);
-        //     logger.info("TID=" + threadID + " DEPTH:" + fields[RECUR] + " --");
-        // }
-        if (--depth == 0) {
-            logger.info("INSTRUCTIONS COUNT: " + instCount);
-            instCount = 0;
+        long threadID = Thread.currentThread().getId();
+        Long[] fields = factorizers.get(threadID);
+        // Last recursion?
+        if (--fields[DEPTH] == 0) {
+            logger.info("Stopping factorization on thread " + threadID);
+            logger.info("Number of running factorizations: " + factorizers.size());
+            // TODO Update Dynamo
+            // HTTPServer.queue.add(fields[UNIQID].toString,
+            //         threadID.toString,
+            //         fields[INSTR],
+            //         DynamoMessenger.INSCREMENT_INSTR);
+        } else {
+            factorizers.put(threadID, fields);
         }
     }
 
-    /**
-     * Increments number of instructions by given basic block size.
-     */
+    // Keeps count of the number of ran instructions,
+    // when they reach a threshold, send an update to Dynamo
     public static synchronized void basicBlockCount(int size) {
-        instCount += size;
-        // long threadID = Thread.currentThread().getId();
-        // Long[] fields = factorizers.get(threadID);
-        // fields[INSTR] += size;
-        // factorizers.put(threadID, fields);
+        long threadID = Thread.currentThread().getId();
+        Long[] fields = factorizers.get(threadID);
+        if (fields[INSTR] + size > THRESHOLD) {
+            fields[INSTR] = (long) size;
+            // TODO Update Dynamo
+            // HTTPServer.queue.add(fields[UNIQID].toString,
+            //         threadID.toString(),
+            //         fields[INSTR],
+            //         DynamoMessenger.INCREMENT_INSTR);
+        } else {
+            fields[INSTR] += size;
+        }
+        factorizers.put(threadID, fields);
+    }
+
+    // Initialize the unique-id (from DynamoDB) for this thread
+    // so it can update the correct row later
+    public static synchronized void insertUniqueId(String id) {
+        long threadID = Thread.currentThread().getId();
+        Long[] fields = new Long[NUM_FIELDS];
+
+        fields[UNIQID] = Long.parseLong(id);
+        fields[INSTR] = 0l;
+        fields[DEPTH] = 0l;
+
+        factorizers.put(threadID, fields);
     }
 }

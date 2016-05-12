@@ -14,6 +14,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 
 import pt.ulisboa.tecnico.cnv.factorization.IntFactorization;
+import pt.ulisboa.tecnico.cnv.instrumentation.InstrumentationTool;
 
 public class HandleFactorize implements HttpHandler {
     final static Logger logger = Logger.getLogger(HandleFactorize.class);
@@ -32,12 +33,18 @@ public class HandleFactorize implements HttpHandler {
             logger.info("Params are: " + query);
 
             if (query != null) {
-                String inputNumber = query.split("n=")[1];
+                String inputNumber = query.split("n=")[1],
+                       inputUniqId = query.split("id=")[1];
 
                 IntFactorization intFact = new IntFactorization();
                 try {
+                    // TODO Update Dynamo
+                    //HTTPServer.queue.add(inputUniqId,
+                    //        Thread.currentThread().getId(),
+                    //        DynamoMessenger.INCREMENT_THREADS);
                     logger.info("Starting factorization of " + inputNumber + "...");
                     long startTime = System.currentTimeMillis();
+                    InstrumentationTool.insertUniqueId(inputUniqId);
                     ArrayList<BigInteger> result = intFact.calcPrimeFactors(new BigInteger(inputNumber));
                     long stopTime = System.currentTimeMillis();
                     logger.info("Factorization took " + (stopTime - startTime) + "ms");
@@ -51,6 +58,11 @@ public class HandleFactorize implements HttpHandler {
                     logger.fatal(e);
                     t.sendResponseHeaders(500, 0);
                     t.getResponseBody().close();
+                } finally {
+                    // TODO Update Dynamo
+                    //HTTPServer.queue.add(inputUniqId,
+                    //        Thread.currentThread().getId(),
+                    //        DynamoMessenger.INCREMENT_THREADS);
                 }
             } else {
                 t.sendResponseHeaders(200, FORM.length());

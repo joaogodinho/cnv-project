@@ -55,7 +55,6 @@ public final class DynamoConnecter {
     }
 	
 	private static void init(){
-		System.out.println("SUPPP");
         AWSCredentials credentials = null;
         try {
             credentials = new ProfileCredentialsProvider().getCredentials();
@@ -170,8 +169,4 @@ public final class DynamoConnecter {
         ScanResult scanresult = getClient().scan(scanrequest);
         System.out.println("got " + scanresult + " running on " + instance);
 	}
-	
-	
-	
-	
 }
