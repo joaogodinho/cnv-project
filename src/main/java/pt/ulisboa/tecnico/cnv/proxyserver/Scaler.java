@@ -12,10 +12,12 @@ import pt.ulisboa.tecnico.cnv.proxyserver.balancer.Balancer;
 import pt.ulisboa.tecnico.cnv.proxyserver.Instance;
 
 import com.amazonaws.services.cloudwatch.model.Datapoint;
+import com.amazonaws.services.ec2.model.InstanceStatus;
 
 public class Scaler extends Thread {
     final static Logger logger = Logger.getLogger(Scaler.class);
 
+    private final static int SLEEP_TIME = 10000;
     // Cooldown (in milliseconds) after launching a new instance
     private final static int COOLDOWN = 2 * 60 * 1000;
     private long lastStart;
@@ -30,6 +32,15 @@ public class Scaler extends Thread {
     // Only allows to launch a new worker when the previous
     // one is running. Serves as a control mechanism.
     private String lastWorker = null;
+
+    private int num_req = 0;
+
+    public synchronized void incNumReq() { num_req++; }
+    public synchronized int getNumReq() {
+        int temp = num_req;
+        num_req = 0;
+        return temp;
+    }
 
     /**
      *  Default constructor, initializaes
@@ -92,59 +103,17 @@ public class Scaler extends Thread {
      */
     public void run() {
         logger.info("Running Scaler thread...");
-        int sleepMilliSeconds = 10000;
-        int metricsTriggerTime = 60 * 1000;
-        int minuteCounter = 0;
         while (this.running) {
             logger.info("Checking workers status...");
-            // Trigger metrics logging every minute
-            if (minuteCounter % metricsTriggerTime == 0) {
-                logger.info("Fetching workers metrics...");
-                updateCPULoad();
-                checkCPULoad();
-                minuteCounter = 0;
-            }
-
             updateLastWorker();
 
-            minuteCounter += sleepMilliSeconds;
-            try { Thread.sleep(sleepMilliSeconds); } catch (Exception e) { }
+            for (Instance i: workers) {
+            }
+
+            try { Thread.sleep(SLEEP_TIME); } catch (Exception e) { }
         }
         terminate();
         logger.info("Finishing Scaler thread.");
-    }
-
-    private void updateCPULoad() {
-        for (Instance instance: workers) {
-            DynamoConnecter.getRunningNumbersOnServer(instance.getId());
-            List<Datapoint> datapoints = AWS.getAvgCPU(instance);
-            if (datapoints != null && datapoints.size() > 0) {
-                logger.info("Updating load average for " + instance.getId());
-                // Always get last datapoint and add it to the instance CPU EMA
-                double load = datapoints.get(datapoints.size() - 1).getAverage();
-                instance.incCpuEMA(load);
-            }
-        }
-    }
-
-    private void checkCPULoad() {
-        logger.info("Checking instances CPU load...");
-        double systemAvg = 0;
-        int counter = 0;
-        boolean overload = false;
-        for (Instance instance: workers) {
-            if (instance.getCpuEMA() != -1) {
-                logger.info("CPU Average for " + instance.getId() + " is = " + instance.getCpuEMA());
-                systemAvg += instance.getCpuEMA();
-                counter++;
-                if (instance.getCpuEMA() > CPU_MAX_LOAD) { overload = true; }
-            }
-        }
-        logger.info("System Average = " + systemAvg / counter);
-        if (overload && lastStart + COOLDOWN > new Date().getTime()) {
-            logger.info("At least one worker is working too much, spawning new one...");
-            startWorker();
-        }
     }
 
     /**
@@ -168,21 +137,38 @@ public class Scaler extends Thread {
     private void updateLastWorker() {
         if (lastWorker != null) {
             logger.info("Checking last worker status...");
-            Instance instance = AWS.getInstance(lastWorker);
-            if (instance.getStatus() == AWS.INST_RUNNING) {
-                logger.info("Last worker is running.");
-                logger.info("Adding " + lastWorker + " to workers pool.");
-                workers.add(instance);
-                logger.info("Notifying Balancer...");
-                balancer.notifyAddWorker(instance);
+            if (isInstanceHealthy(lastWorker)) {
+                addWorker(lastWorker);
                 lastWorker = null;
-            } else {
-                logger.info("Last worker not running, status = " + instance.getStatus());
             }
         }
     }
 
     public synchronized List<Instance> getWorkers() {
         return Collections.unmodifiableList(workers);
+    }
+
+    // Checks if the instance with the given ID is
+    // healthy
+    private boolean isInstanceHealthy(String instanceId) {
+        InstanceStatus is = AWS.getInstanceStatus(lastWorker);
+        if (is != null) {
+            if (is.getInstanceState().getName().equals(AWS.INST_RUNNING) &&
+                    is.getInstanceStatus().getStatus().equals(AWS.INST_OK) &&
+                    is.getSystemStatus().getStatus().equals(AWS.INST_OK)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Adds the instance with the given ID to the workers
+    // and notifies Balancer
+    private void addWorker(String instanceId) {
+        Instance ins = AWS.getInstance(lastWorker);
+        logger.info("Last worker is running. Adding " + lastWorker + " to workers pool.");
+        workers.add(ins);
+        logger.info("Notifying Balancer...");
+        balancer.notifyAddWorker(ins);
     }
 }

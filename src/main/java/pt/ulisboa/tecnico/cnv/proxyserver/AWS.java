@@ -11,7 +11,10 @@ import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
+import com.amazonaws.services.ec2.model.DescribeInstanceStatusRequest;
+import com.amazonaws.services.ec2.model.DescribeInstanceStatusResult;
 import com.amazonaws.services.ec2.model.InstanceState;
+import com.amazonaws.services.ec2.model.InstanceStatus;
 import com.amazonaws.services.cloudwatch.model.Dimension;
 import com.amazonaws.services.cloudwatch.model.Datapoint;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
@@ -48,11 +51,10 @@ public final class AWS {
     private static final String SEC_GROUP = "default";
 
     private static AmazonEC2 ec2 = null;
-    private static AmazonCloudWatchClient cloudWatch = null;
     private static RunInstancesRequest runInstanceReq = null;
 
-    public static final int INST_PENDING = 0;
-    public static final int INST_RUNNING = 16;
+    public static final String INST_RUNNING = "running";
+    public static final String INST_OK = "ok";
 
     private static final long offsetInMilliseconds = 1000 * 60 * 10;
 
@@ -71,9 +73,7 @@ public final class AWS {
                         e);
             }
             ec2 = new AmazonEC2Client(credentials);
-            cloudWatch = new AmazonCloudWatchClient(credentials);
             ec2.setEndpoint(EC2_ENDPOINT);
-            cloudWatch.setEndpoint(CW_ENDPOINT);
 
             runInstanceReq = new RunInstancesRequest();
             runInstanceReq.withImageId(IMAGE_ID)
@@ -86,7 +86,7 @@ public final class AWS {
         }
     }
 
-    // Creates a new instance and returns the Instance
+    // Creates a new instance and returns the Instance ID
     public static String createInstance() {
         RunInstancesResult instanceResult = ec2.runInstances(runInstanceReq);
         return instanceResult.getReservation().getInstances().get(0).getInstanceId();
@@ -112,25 +112,13 @@ public final class AWS {
         return instance;
     }
 
-    public static List<Datapoint> getAvgCPU(Instance instance) {
-        Dimension instanceDimension = new Dimension();
-        instanceDimension.setName("InstanceId");
-        instanceDimension.setValue(instance.getId());
-
-        GetMetricStatisticsRequest request = new GetMetricStatisticsRequest()
-            .withStartTime(new Date(new Date().getTime() - offsetInMilliseconds))
-            .withNamespace("AWS/EC2")
-            .withPeriod(60)
-            .withMetricName("CPUUtilization")
-            .withStatistics("Average")
-            .withDimensions(instanceDimension)
-            .withEndTime(new Date());
-
-        GetMetricStatisticsResult getMetricStatisticsResult = cloudWatch.getMetricStatistics(request);
-        return getMetricStatisticsResult.getDatapoints();
-
-        // for (Datapoint dp: getMetricStatisticsResult.getDatapoints()) {
-        //     logger.info("CPU utilization for instance " + instance.getId() + " = " + dp.getAverage());
-        // }
+    public static InstanceStatus getInstanceStatus(String instanceId) {
+        DescribeInstanceStatusRequest disreq = new DescribeInstanceStatusRequest().withInstanceIds(instanceId);
+        DescribeInstanceStatusResult disres = ec2.describeInstanceStatus(disreq);
+        if (disres.getInstanceStatuses() != null && disres.getInstanceStatuses().size() > 0) {
+            return disres.getInstanceStatuses().get(0);
+        } else {
+            return null;
+        }
     }
 }
