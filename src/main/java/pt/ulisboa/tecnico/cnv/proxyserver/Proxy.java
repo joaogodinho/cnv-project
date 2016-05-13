@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import pt.ulisboa.tecnico.cnv.httpserver.Path;
 import pt.ulisboa.tecnico.cnv.proxyserver.balancer.Balancer;
+import pt.ulisboa.tecnico.cnv.proxyserver.balancer.SmartBalancer;
 import pt.ulisboa.tecnico.cnv.proxyserver.balancer.RoundRobinBalancer;
 import pt.ulisboa.tecnico.cnv.proxyserver.Scaler;
 import pt.ulisboa.tecnico.cnv.proxyserver.handlers.HandleFactorize;
@@ -26,8 +27,10 @@ public class Proxy {
     private static Scaler scaler = null;
 
     public Proxy() throws Exception {
-        balancer = new RoundRobinBalancer();
+        //balancer = new RoundRobinBalancer();
+        balancer = new SmartBalancer();
         scaler = new Scaler(balancer);
+        balancer.setScaler(scaler);
         serverPool = Executors.newFixedThreadPool(POOL_SIZE);
     }
 

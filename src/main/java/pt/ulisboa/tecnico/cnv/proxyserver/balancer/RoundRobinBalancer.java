@@ -15,7 +15,7 @@ public class RoundRobinBalancer extends AbstractBalancer {
     }
 
     public synchronized Instance requestInstance(String number) {
-        logger.info("Got instance request for number = " + number);
+        //logger.info("Got instance request for number = " + number);
         index = (index + 1)  % this.workers.size();
         return this.workers.get(index);
     }

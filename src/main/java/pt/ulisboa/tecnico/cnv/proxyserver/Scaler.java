@@ -20,7 +20,7 @@ public class Scaler extends Thread {
     private final static int SLEEP_TIME = 10000;
     // Cooldown (in milliseconds) after launching a new instance
     private final static int COOLDOWN = 2 * 60 * 1000;
-    private long lastStart;
+    private long lastStart = 0;
     private final static int REQ = 0;
     private final static int BITS= 1;
 
@@ -29,13 +29,20 @@ public class Scaler extends Thread {
     private ArrayList<Instance> workers;
 
     // Variables for balancing/scaling
-    // Numbers with less than 20bits are too fast
     private final static float EPSILON = 0.02f;
-    public final static int BITS_INF_LIM = 20;
     private final static int BIT_THRESHOLD = 30;
     private final static float REQ_THRESHOLD = 1.6f;
-    private final static float REQ_ALPHA = 0.5f;
+    private final static float REQ_ALPHA = 0.4f;
+    private final static float REQ_BETA = 0.8f;
     private final static int REQ_MAX_PERIOD = 3;
+    private final static int MAX_THREADS_WORKER = 20;
+    private final static float THREADS_MAX_RATIO = 0.8f;
+    private final static float REQ_MAX_RATIO = 0.9f;
+    private final static float BIT_MAX_RATIO = 1.0f;
+    private final static float REQ_WEIGHT = 0.3f;
+    private final static float BIT_WEIGHT = 0.45f;
+    private final static float THREAD_WEIGHT = 0.25f;
+    private final static float SYSTEM_THRESHOLD = 0.55f;
 
     // Only allows to launch a new worker when the previous
     // one is running. Serves as a control mechanism.
@@ -69,6 +76,7 @@ public class Scaler extends Thread {
         AWS.init();
         workers = new ArrayList<Instance>();
         // Launch one worker
+        lastWorker = "i-a277141e";
         startWorker();
     }
 
@@ -89,7 +97,7 @@ public class Scaler extends Thread {
      * Returns a new instance
      */
     private String startWorker() {
-        if (lastWorker == null) {
+        if (lastWorker == null && lastStart + COOLDOWN < new Date().getTime()) {
             logger.info("Starting worker...");
             lastWorker = AWS.createInstance();
             logger.info("Started worker with ID = " + lastWorker);
@@ -123,30 +131,66 @@ public class Scaler extends Thread {
         logger.info("Running Scaler thread...");
         // Number of times the requests are over the limit
         int reqPeriods = 0;
+        int bitPeriods = 0;
+        int threadsPeriods = 0;
         while (this.running) {
             int[] reqs = getReqMetrics();
-            if (reqs[REQ] != 0 && reqs[BITS] != 0) {
+            if (reqs[REQ] != 0 && reqs[BITS] != 0 && workers.size() != 0) {
+                float systemLoad = 0.0f;
                 float reqsec = (float) reqs[REQ] / (SLEEP_TIME / 1000);
                 float bitavg = (float) reqs[BITS] / reqs[REQ];
-                float reqload = calcReqLoad(reqsec, bitavg);
+                float threadavg = 0.0f;
+
+                for (Instance i: workers) {
+                    threadavg += i.getNumberCurrentThreads();
+                }
+                threadavg /= workers.size();
+
                 logger.info("Average req/sec = " + reqsec);
                 logger.info("Average bits = " + bitavg);
-                logger.info("Requests calculated load = " + reqload);
-                if (Math.abs(reqload - 1.0f) < EPSILON) {
-                    logger.info("Req are over threshold");
-                    if (++reqPeriods == REQ_MAX_PERIOD) {
-                        logger.info("System overload, starting new worker...");
-                        reqPeriods = 0;
+                logger.info("Average threads = " + threadavg);
+
+                float reqsecratio = Math.min(calcReqSecLoad(reqsec, workers.size()), 1.0f);
+                float bitratio = Math.min(calcBitLoad(bitavg, workers.size()), 1.0f);
+                float threadratio = Math.min(calcThreadLoad(threadavg, workers.size()), 1.0f);
+
+                logger.info("req/sec ratio = " + reqsecratio);
+                logger.info("bit ratio = " + bitratio);
+                logger.info("thread ratio = " + threadratio);
+
+                if (reqsecratio >= REQ_MAX_RATIO) {
+                    if (++reqPeriods >= 3) {
+                        logger.info("Trigger from requests ratio.");
+                        systemLoad += reqsecratio * REQ_WEIGHT;
                     }
-                } else {
-                    reqPeriods = 0;
+                } else { reqPeriods = 0; }
+
+                if (bitratio >= BIT_MAX_RATIO) {
+                    if (++bitPeriods >= 3) {
+                        logger.info("Trigger from bit ratio.");
+                        systemLoad += bitratio * BIT_WEIGHT;
+                    }
+                } else { bitratio = 0; }
+
+                if (threadratio >= THREADS_MAX_RATIO) {
+                    if (++threadsPeriods >= 3) {
+                        logger.info("Trigger from threads ratio.");
+                        systemLoad += threadratio * THREAD_WEIGHT;
+                    }
+                } else { threadsPeriods = 0; }
+
+                systemLoad /= workers.size();
+                logger.info("System total load = " + systemLoad);
+                if (systemLoad >= SYSTEM_THRESHOLD) {
+                    logger.info("System overload, start new worker.");
+                    reqPeriods = 0; bitPeriods = 0; threadsPeriods = 0;
+                    startWorker();
                 }
             }
+
             logger.info("Checking workers status...");
             updateLastWorker();
 
-            for (Instance i: workers) {
-            }
 
             try { Thread.sleep(SLEEP_TIME); } catch (Exception e) { }
         }
@@ -174,12 +218,12 @@ public class Scaler extends Thread {
      */
     private void updateLastWorker() {
         if (lastWorker != null) {
-            logger.info("Checking last worker status...");
             if (isInstanceHealthy(lastWorker)) {
                 addWorker(lastWorker);
                 lastWorker = null;
             }
         }
+        if (workers.size() == 1) { startWorker(); }
     }
 
     public synchronized List<Instance> getWorkers() {
@@ -210,7 +254,15 @@ public class Scaler extends Thread {
         balancer.notifyAddWorker(ins);
     }
 
-    private float calcReqLoad(float reqsec, float avgbit) {
-        return (reqsec / REQ_THRESHOLD) * REQ_ALPHA + (avgbit / BIT_THRESHOLD) * (1 - REQ_ALPHA);
+    private float calcReqSecLoad(float reqsec, int numbWorkers) {
+        return (reqsec / numbWorkers) / REQ_THRESHOLD;
+    }
+
+    private float calcBitLoad(float avgbit, int numbWorkers) {
+        return (avgbit / numbWorkers) / BIT_THRESHOLD;
+    }
+
+    private float calcThreadLoad(float avgthreads, int numbWorkers) {
+        return (avgthreads / numbWorkers) / MAX_THREADS_WORKER;
     }
 }

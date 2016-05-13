@@ -36,15 +36,15 @@ public class HandleFactorize implements HttpHandler {
     @Override
     public void handle(HttpExchange t) throws IOException {
         if (t.getRequestMethod().equals("GET")) {
-            logger.info("GET request from " + t.getRequestURI());
+            //logger.info("GET request from " + t.getRequestURI());
             String query = t.getRequestURI().getQuery();
-            logger.info("Params are: " + query);
+            //logger.info("Params are: " + query);
 
             if (query != null) {
                 String inputNumber = query.split("n=")[1];
                 Instance target = balancer.requestInstance(inputNumber);
                 String targetDns = target.getDns();
-                logger.info("Got " + targetDns + " target from Balancer");
+                //logger.info("Got " + targetDns + " target from Balancer");
                 NumberCrunchingEntry entry = null;
                 String answer = null;
                 BigInteger number = new BigInteger("0");
@@ -66,14 +66,7 @@ public class HandleFactorize implements HttpHandler {
                     OutputStream os = t.getResponseBody();
                     os.write(answer.getBytes());
                     os.close();
-                    // Ignore small numbers
-                    // if (number.bitLength() > Scaler.BITS_INF_LIM) {
-                    //     long number_instructions = DynamoConnecter.getNumberOfInstructions(entry.getID().toString());
-                    //     logger.info("Got answer: " + answer + " with number of instr = " + number_instructions);
-                    //     DynamoConnecter.addStatisticEntry(entry.getNumberBits(), number_instructions);
-                    // }
                     target.removeTask(entry);
-                    // DynamoConnecter.deleteEntry(entry.getID());
                 } else {
                     target.removeTask(entry);
                     DynamoConnecter.deleteEntry(entry.getID());
@@ -95,7 +88,7 @@ public class HandleFactorize implements HttpHandler {
 
     private String doRequest(String dns, String number, String uniqId) throws Exception {
         String url = "http://" + dns + ":8080/f.html?n=" + number + "&id=" + uniqId;
-        logger.info("Doing request to: " + url);
+        //logger.info("Doing request to: " + url);
 
         URL worker = new URL(url);
         URLConnection wc = worker.openConnection();

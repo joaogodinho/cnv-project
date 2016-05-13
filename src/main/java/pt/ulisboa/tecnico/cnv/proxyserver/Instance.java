@@ -1,20 +1,18 @@
 package pt.ulisboa.tecnico.cnv.proxyserver;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Instance{
     private String instanceId;
     private String instanceDns;
     private int instanceStatus;
+    public float cost = 1.0f;
 
     
     private LinkedBlockingQueue<NumberCrunchingEntry> threads = new LinkedBlockingQueue<NumberCrunchingEntry>();
     
-    // Values for Exponential Moving Average
-    // -1 notifies first time incrementing average
-    private double cpuEMA = -1;
-    private static final double ALPHA = 0.5;
-
     public Instance() { }
 
     public Instance(int status, String id, String dns) {
@@ -37,18 +35,15 @@ public class Instance{
 
     public String getDns() { return instanceDns; }
 
-    public double getCpuEMA() { return cpuEMA; }
+    public List<NumberCrunchingEntry> getThreads() {
+        return new ArrayList<NumberCrunchingEntry>(threads);
+    }
 
     public void setStatus(int status) { instanceStatus = status; }
 
     public void setId(String id) { instanceId = id; }
 
     public void setDns(String dns) { instanceDns = dns; }
-
-    public void incCpuEMA(double load) {
-        if (cpuEMA == -1) { cpuEMA = load; }
-        else { cpuEMA = ALPHA * load + (1 - ALPHA) * cpuEMA; }
-    }
 
     @Override
     public boolean equals(Object obj) {
@@ -78,8 +73,15 @@ public class Instance{
 		return cost;
 	}
 
+    public long getThreadsCost() {
+        long cost = 0;
+        for (NumberCrunchingEntry t: threads) {
+            cost += t.getCurrentCost();
+        }
+        return cost;
+    }
+
 	public Instance compareTo(Instance o) {
 		return this.getLowestCostThread() < o.getLowestCostThread() ? this : o;
 	}
-
 }

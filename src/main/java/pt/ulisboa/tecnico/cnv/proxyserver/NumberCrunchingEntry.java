@@ -1,5 +1,9 @@
 package pt.ulisboa.tecnico.cnv.proxyserver;
 
+import pt.ulisboa.tecnico.cnv.proxyserver.balancer.SmartBalancer;
+
+import pt.ulisboa.tecnico.cnv.proxyserver.balancer.SmartBalancer;
+
 public class NumberCrunchingEntry{
 
 
@@ -33,8 +37,7 @@ public class NumberCrunchingEntry{
 	//TODO
 	//Expected time of this instruction
 	public static long getExpectedInstructions(int number_bits){
-		
-		return 0;
+		return SmartBalancer.predictNumbInst(number_bits);
 	}
 	
 	

@@ -27,7 +27,7 @@ public final class AWS {
     private static final String CW_ENDPOINT = "monitoring.eu-central-1.amazonaws.com";
     // Amazon Linux AMI 2016.03.0
     // TODO Change to ID with running server (workers)
-    private static final String IMAGE_ID = "ami-b17b96de";
+    private static final String IMAGE_ID = "ami-9545a8fa";
 
     // Instance type to be used, should be final
     private static final String INST_TYPE = "t2.micro";
@@ -80,16 +80,16 @@ public final class AWS {
 
     // Creates a new instance and returns the Instance ID
     public static String createInstance() {
-        //RunInstancesResult instanceResult = ec2.runInstances(runInstanceReq);
-        //return instanceResult.getReservation().getInstances().get(0).getInstanceId();
-        return "i-43dfbfff";
+        RunInstancesResult instanceResult = ec2.runInstances(runInstanceReq);
+        return instanceResult.getReservation().getInstances().get(0).getInstanceId();
+        //return "i-43dfbfff";
     }
 
     // Terminates the instance with the given ID
     public static void terminateInstance(String instanceId) {
-        // TerminateInstancesRequest termInstanceReq = new TerminateInstancesRequest();
-        // termInstanceReq.withInstanceIds(instanceId);
-        // ec2.terminateInstances(termInstanceReq);
+        TerminateInstancesRequest termInstanceReq = new TerminateInstancesRequest();
+        termInstanceReq.withInstanceIds(instanceId);
+        ec2.terminateInstances(termInstanceReq);
     }
 
     public static void getInstances() { }
