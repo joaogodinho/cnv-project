@@ -28,6 +28,9 @@ public class Scaler extends Thread {
     private boolean running = true;
     private ArrayList<Instance> workers;
 
+    // Numbers with less than 20bits are too fast
+    public final static int BITS_INF_LIM = 20;
+
     // Only allows to launch a new worker when the previous
     // one is running. Serves as a control mechanism.
     private String lastWorker = null;
@@ -115,8 +118,8 @@ public class Scaler extends Thread {
         while (this.running) {
             int[] reqs = getReqMetrics();
             if (reqs[REQ] != 0 && reqs[BITS] != 0) {
-                float reqsec = (float) reqs[REQ] / SLEEP_TIME / 1000;
-                float bitsec = (float) reqs[BITS] / reqs[REQ] / SLEEP_TIME / 1000;
+                float reqsec = (float) reqs[REQ] / (SLEEP_TIME / 1000);
+                float bitsec = (float) reqs[BITS] / reqs[REQ] / (SLEEP_TIME / 1000);
                 logger.info("Average req/sec = " + reqsec);
                 logger.info("Average bits/sec = " + bitsec);
             }

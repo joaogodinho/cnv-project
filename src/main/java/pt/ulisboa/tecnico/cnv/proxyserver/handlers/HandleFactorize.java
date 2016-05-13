@@ -47,8 +47,9 @@ public class HandleFactorize implements HttpHandler {
                 logger.info("Got " + targetDns + " target from Balancer");
                 NumberCrunchingEntry entry = null;
                 String answer = null;
+                BigInteger number = new BigInteger("0");
                 try {
-                    BigInteger number = new BigInteger(inputNumber);
+                    number = new BigInteger(inputNumber);
                     scaler.incReq(number.bitLength());
                     entry = DynamoConnecter.createEntryGetID(target.getId(),number.bitLength());
                     target.insertTask(entry);
@@ -61,14 +62,18 @@ public class HandleFactorize implements HttpHandler {
                 }
 
                 if (answer != null) {
-                    target.removeTask(entry);
-                    long number_instructions = DynamoConnecter.getNumberOfInstructions(String.valueOf(entry.getID()));
-                    DynamoConnecter.addStatisticEntry(entry.getNumberBits(), number_instructions);
-                    DynamoConnecter.deleteEntry(entry.getID());
                     t.sendResponseHeaders(200, answer.length());
                     OutputStream os = t.getResponseBody();
                     os.write(answer.getBytes());
                     os.close();
+                    // Ignore small numbers
+                    if (number.bitLength() > Scaler.BITS_INF_LIM) {
+                        long number_instructions = DynamoConnecter.getNumberOfInstructions(entry.getID().toString());
+                        logger.info("Got answer: " + answer + " with number of instr = " + number_instructions);
+                        DynamoConnecter.addStatisticEntry(entry.getNumberBits(), number_instructions);
+                    }
+                    target.removeTask(entry);
+                    DynamoConnecter.deleteEntry(entry.getID());
                 } else {
                     target.removeTask(entry);
                     DynamoConnecter.deleteEntry(entry.getID());

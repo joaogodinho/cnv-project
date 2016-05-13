@@ -15,6 +15,8 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -29,6 +31,7 @@ import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
+import com.amazonaws.services.simpledb.model.Attribute;
 
 public final class DynamoConnecter {
 	
@@ -200,29 +203,26 @@ public final class DynamoConnecter {
 		expressionAttributeNames.put("#instructions", "instruction_count");
 		Map<String,Object> expressionAttributeValues = new HashMap<String,Object>();
 		expressionAttributeValues.put(":incr", Integer.valueOf(instruction_number));
-		
+
 		instancesTable.updateItem(
-			    PRIMARY_KEY_CRUNCHING, unique_id, 
-			    "set #instructions = #instructions + :incr", 
-			    expressionAttributeNames, 
+			    PRIMARY_KEY_CRUNCHING, unique_id,
+			    "set #instructions = #instructions + :incr",
+			    expressionAttributeNames,
 			    expressionAttributeValues);
 	}
-	
+
 	//get the number of instructions up to this time of a specific NumberCrunchingEntry
 	public static long getNumberOfInstructions(String unique_id){
-		HashMap<String,Condition> scanFilter = new HashMap<String,Condition>();
-		Condition condition = new Condition()
-				.withComparisonOperator(ComparisonOperator.EQ.toString())
-				.withAttributeValueList(new AttributeValue(unique_id));
-		scanFilter.put("unique_id", condition);
-		ScanRequest scanrequest = new ScanRequest(CRUNCHING_TABLE).withScanFilter(scanFilter);
-		ScanResult result = getClient().scan(scanrequest);
-		Map<String,AttributeValue> items = result.getItems().get(0); //returns a list of objects, we only need the first
-		String instructions = items.get("instruction_count").getS();
-		return Long.parseLong(instructions);
+        DynamoDB dynamoDB = new DynamoDB(getClient());
+        GetItemSpec spec = new GetItemSpec()
+            .withPrimaryKey("unique-id", unique_id)
+            .withProjectionExpression("instruction_count")
+            .withConsistentRead(true);
+        Table table = dynamoDB.getTable(CRUNCHING_TABLE);
+        Item item = table.getItem(spec);
+        return Long.parseLong(item.getString("instruction_count"));
 	}
-	
-	
+
 	//Statistics Table
 	public static void createStatisticsTable(){
 		AmazonDynamoDBClient client = getClient();
@@ -239,7 +239,7 @@ public final class DynamoConnecter {
 			System.out.println("Table Statistics took more than 10 minutes to be active!");
 		}
 	}
-	
+
 	public static void removeStatisticEntry(int unique_id){
 		AmazonDynamoDBClient client = getClient();
 		DeleteItemRequest delete = new DeleteItemRequest()

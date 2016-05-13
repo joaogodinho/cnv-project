@@ -106,10 +106,8 @@ public class InstrumentationTool {
             params[0] = String.valueOf(fields[UNIQID]);
             params[1] =String.valueOf(fields[INSTR]);
             params[2] = DynamoMessenger.INCREMENT_INSTRUCTIONS;
+            factorizers.remove(threadID);
             HTTPServer.queue.add(params);
-            //         threadID.toString,
-            //         fields[INSTR],
-            //         DynamoMessenger.INSCREMENT_INSTR);
         } else {
             factorizers.put(threadID, fields);
         }
@@ -121,7 +119,6 @@ public class InstrumentationTool {
         long threadID = Thread.currentThread().getId();
         Long[] fields = factorizers.get(threadID);
         if (fields[INSTR] + size > THRESHOLD) {
-            
             String[] params = new String[3];
             params[0] = String.valueOf(fields[UNIQID]);
             params[1] = String.valueOf(fields[INSTR]);
