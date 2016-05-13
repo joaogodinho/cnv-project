@@ -76,7 +76,7 @@ public final class DynamoConnecter {
     }
 	
 	public static void createTables(){
-		createThreadTable();
+		// createThreadTable();
 		createCrunchingTable();
 		createStatisticsTable();
 	}
@@ -139,7 +139,7 @@ public final class DynamoConnecter {
         		.withTableName(CRUNCHING_TABLE)
         		.withKeySchema(new KeySchemaElement(PRIMARY_KEY_CRUNCHING, KeyType.HASH))
         		.withAttributeDefinitions(new AttributeDefinition(PRIMARY_KEY_CRUNCHING, ScalarAttributeType.S))
-        		.withProvisionedThroughput(new ProvisionedThroughput(1L,1L));
+        		.withProvisionedThroughput(new ProvisionedThroughput(10L,10L));
 		TableUtils.createTableIfNotExists(client, table);
 		try{
         	TableUtils.waitUntilActive(client, CRUNCHING_TABLE);
@@ -230,7 +230,7 @@ public final class DynamoConnecter {
 				.withTableName(STATISTICS_TABLE)
 				.withKeySchema(new KeySchemaElement(PRIMARY_KEY_STATISTICS, KeyType.HASH))
 				.withAttributeDefinitions(new AttributeDefinition(PRIMARY_KEY_STATISTICS,ScalarAttributeType.S))
-				.withProvisionedThroughput(new ProvisionedThroughput(1L,1L));
+				.withProvisionedThroughput(new ProvisionedThroughput(5L,5L));
 		TableUtils.createTableIfNotExists(client, table);
 		try{
 			TableUtils.waitUntilActive(client, STATISTICS_TABLE);

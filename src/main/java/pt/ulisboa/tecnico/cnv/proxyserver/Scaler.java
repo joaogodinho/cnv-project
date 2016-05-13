@@ -28,8 +28,14 @@ public class Scaler extends Thread {
     private boolean running = true;
     private ArrayList<Instance> workers;
 
+    // Variables for balancing/scaling
     // Numbers with less than 20bits are too fast
+    private final static float EPSILON = 0.02f;
     public final static int BITS_INF_LIM = 20;
+    private final static int BIT_THRESHOLD = 30;
+    private final static float REQ_THRESHOLD = 1.6f;
+    private final static float REQ_ALPHA = 0.5f;
+    private final static int REQ_MAX_PERIOD = 3;
 
     // Only allows to launch a new worker when the previous
     // one is running. Serves as a control mechanism.
@@ -115,13 +121,26 @@ public class Scaler extends Thread {
      */
     public void run() {
         logger.info("Running Scaler thread...");
+        // Number of times the requests are over the limit
+        int reqPeriods = 0;
         while (this.running) {
             int[] reqs = getReqMetrics();
             if (reqs[REQ] != 0 && reqs[BITS] != 0) {
                 float reqsec = (float) reqs[REQ] / (SLEEP_TIME / 1000);
-                float bitsec = (float) reqs[BITS] / reqs[REQ] / (SLEEP_TIME / 1000);
+                float bitavg = (float) reqs[BITS] / reqs[REQ];
+                float reqload = calcReqLoad(reqsec, bitavg);
                 logger.info("Average req/sec = " + reqsec);
-                logger.info("Average bits/sec = " + bitsec);
+                logger.info("Average bits = " + bitavg);
+                logger.info("Requests calculated load = " + reqload);
+                if (Math.abs(reqload - 1.0f) < EPSILON) {
+                    logger.info("Req are over threshold");
+                    if (++reqPeriods == REQ_MAX_PERIOD) {
+                        logger.info("System overload, starting new worker...");
+                        reqPeriods = 0;
+                    }
+                } else {
+                    reqPeriods = 0;
+                }
             }
             logger.info("Checking workers status...");
             updateLastWorker();
@@ -189,5 +208,9 @@ public class Scaler extends Thread {
         workers.add(ins);
         logger.info("Notifying Balancer...");
         balancer.notifyAddWorker(ins);
+    }
+
+    private float calcReqLoad(float reqsec, float avgbit) {
+        return (reqsec / REQ_THRESHOLD) * REQ_ALPHA + (avgbit / BIT_THRESHOLD) * (1 - REQ_ALPHA);
     }
 }

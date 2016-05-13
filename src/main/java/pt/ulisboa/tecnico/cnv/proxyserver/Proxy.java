@@ -18,7 +18,7 @@ import pt.ulisboa.tecnico.cnv.proxyserver.handlers.HandleFactorize;
 public class Proxy {
     final static Logger logger = Logger.getLogger(Proxy.class);
     private static int PORT = 8080;
-    private static int POOL_SIZE = 10;
+    private static int POOL_SIZE = 100;
     private HttpServer server = null;
     private ExecutorService serverPool = null;
 

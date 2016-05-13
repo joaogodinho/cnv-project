@@ -67,13 +67,13 @@ public class HandleFactorize implements HttpHandler {
                     os.write(answer.getBytes());
                     os.close();
                     // Ignore small numbers
-                    if (number.bitLength() > Scaler.BITS_INF_LIM) {
-                        long number_instructions = DynamoConnecter.getNumberOfInstructions(entry.getID().toString());
-                        logger.info("Got answer: " + answer + " with number of instr = " + number_instructions);
-                        DynamoConnecter.addStatisticEntry(entry.getNumberBits(), number_instructions);
-                    }
+                    // if (number.bitLength() > Scaler.BITS_INF_LIM) {
+                    //     long number_instructions = DynamoConnecter.getNumberOfInstructions(entry.getID().toString());
+                    //     logger.info("Got answer: " + answer + " with number of instr = " + number_instructions);
+                    //     DynamoConnecter.addStatisticEntry(entry.getNumberBits(), number_instructions);
+                    // }
                     target.removeTask(entry);
-                    DynamoConnecter.deleteEntry(entry.getID());
+                    // DynamoConnecter.deleteEntry(entry.getID());
                 } else {
                     target.removeTask(entry);
                     DynamoConnecter.deleteEntry(entry.getID());

@@ -14,7 +14,7 @@ import pt.ulisboa.tecnico.cnv.httpserver.handlers.HandleIndex;
 public class HTTPServer {
     final static Logger logger = Logger.getLogger(HTTPServer.class);
     private static int PORT = 8080;
-    private static int POOL_SIZE = 10;
+    private static int POOL_SIZE = 20;
     public static String instanceID;
     public static LinkedBlockingQueue<String[]> queue = new LinkedBlockingQueue<String[]>();
 
